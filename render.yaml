@@ -1,0 +1,4 @@
+# Render Blueprint placeholder.
+# Services will be added after apps/web and apps/api exist.
+
+services: []

@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.astro/
+.nest/
+coverage/
+
+# Environment files
+.env
+.env.*
+!.env.example
+!apps/**/.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local artifacts
+tmp/
+temp/
+backups/
+*.dump
+*.archive
+*.sql
+*.gz

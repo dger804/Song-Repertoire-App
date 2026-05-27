@@ -1,0 +1,11 @@
+{
+  "name": "song-repertoire-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Personal web app for managing songs and musical repertoires.",
+  "scripts": {
+    "lint": "echo \"No apps initialized yet\"",
+    "test": "echo \"No tests configured yet\""
+  },
+  "packageManager": "pnpm@10.0.0"
+}
