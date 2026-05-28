@@ -80,6 +80,7 @@ song-repertoire-app/
 
 - Arquitectura: `docs/architecture/000-system-overview.md`
 - Entornos: `docs/architecture/001-runtime-environments.md`
+- Estructura monorepo: `docs/architecture/002-monorepo-structure.md`
 - Decisiones: `docs/decisions/`
 - Seguridad: `docs/security/security-playbook.md`
 - Render: `docs/deployment/render-deployment.md`
@@ -89,4 +90,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 1 - Inicializacion del repositorio y documentacion base.
+Etapa actual completada: Etapa 2 - Definicion de estructura monorepo.
