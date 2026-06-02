@@ -86,8 +86,10 @@ song-repertoire-app/
 - Render: `docs/deployment/render-deployment.md`
 - Migracion futura: `docs/deployment/migration-plan.md`
 - Backup y restore: `docs/backup-restore/mongodb-backup-restore.md`
+- Preparacion local: `docs/playbooks/local-development-setup.md`
+- Portabilidad de skills: `docs/playbooks/codex-skills-portability.md`
 - Skills aprendidas: `docs/codex-skills/`
 
 ## Estado
 
-Etapa actual completada: Etapa 2 - Definicion de estructura monorepo.
+Etapa actual completada: Etapa 3 - Preparacion del entorno local.
