@@ -13,4 +13,16 @@ No agregar abstracciones prematuras. Este paquete debe permanecer pequeno y solo
 
 ## Estado
 
-No contiene codigo todavia.
+Contiene contratos compartidos pequenos para el dominio inicial:
+
+- roles de usuario;
+- permisos base por rol;
+- tipos de canciones, categorias y repertorios.
+
+## Comandos
+
+Desde la raiz del repositorio:
+
+```bash
+pnpm build:shared
+```

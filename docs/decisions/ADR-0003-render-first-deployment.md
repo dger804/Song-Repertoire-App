@@ -1,8 +1,8 @@
-# ADR-0003: Render Como Primer Despliegue
+# ADR-0003: Render Como Primer Despliegue Evaluado
 
 ## Estado
 
-Aprobado.
+Reemplazado parcialmente por ADR-0005.
 
 ## Contexto
 
@@ -10,7 +10,7 @@ El proyecto no usara NAS, Tailscale ni Hostinger en esta fase. Se requiere una p
 
 ## Decision
 
-Usar Render como primera plataforma de despliegue:
+Render queda como una opcion documentada para despliegue futuro:
 
 - Astro como Static Site.
 - NestJS como Web Service.
@@ -29,3 +29,7 @@ Usar Render como primera plataforma de despliegue:
 - CORS demasiado permisivo.
 - Builds rotos por rutas de monorepo mal definidas.
 - Problemas de allowlist entre Render y MongoDB Atlas.
+
+## Decision posterior
+
+ADR-0005 cambia la prioridad: primero se validara la aplicacion local con MongoDB Atlas antes de elegir plataforma de despliegue publico.

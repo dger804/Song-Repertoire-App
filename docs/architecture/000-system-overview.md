@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-La aplicacion debe gestionar canciones, categorias y repertorios musicales con una arquitectura moderna, portable y preparada para Render.
+La aplicacion debe gestionar canciones, categorias y repertorios musicales con una arquitectura moderna, portable y validada primero en local.
 
 ## Arquitectura aprobada
 
@@ -12,9 +12,8 @@ Local development
   -> NestJS REST API
   -> MongoDB Atlas
 
-Render
-  -> Astro Static Site
-  -> NestJS Web Service
+Despliegue publico futuro
+  -> Plataforma por definir
   -> MongoDB Atlas
 ```
 
@@ -45,6 +44,12 @@ Render
 - Bases de datos separadas para desarrollo y produccion.
 - Conexion mediante variables de entorno.
 
+### Roles
+
+- Roles compartidos desde `packages/shared`.
+- Autorizacion real pendiente de implementacion en backend.
+- Login fuera del alcance inmediato hasta aprobar estrategia de autenticacion.
+
 ## Alcance funcional inicial
 
 - Canciones.
@@ -52,12 +57,12 @@ Render
 - Repertorios.
 - Relacion canciones-repertorios.
 - Orden dentro de repertorios.
+- Roles base para usuarios futuros.
 
 ## Fuera del alcance inicial
 
-- Autenticacion.
-- Usuarios.
 - Login.
+- Autenticacion.
 - Confirmacion por email.
 - Dominio propio.
 - Exposicion de servicios locales.

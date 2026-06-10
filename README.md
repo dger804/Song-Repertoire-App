@@ -23,12 +23,12 @@ El MVP inicial cubrira:
 - Repertorios.
 - Relacion canciones-repertorios.
 - Orden de canciones dentro de repertorios.
+- Roles base para usuarios futuros.
 
 Queda fuera del MVP inicial:
 
-- autenticacion;
+- login y autenticacion;
 - registro por email;
-- login;
 - recuperacion de contrasena;
 - repertorios privados por usuario;
 - dominio propio;
@@ -81,6 +81,7 @@ song-repertoire-app/
 - Arquitectura: `docs/architecture/000-system-overview.md`
 - Entornos: `docs/architecture/001-runtime-environments.md`
 - Estructura monorepo: `docs/architecture/002-monorepo-structure.md`
+- Roles y dominio: `docs/architecture/003-access-control-and-domain-model.md`
 - Decisiones: `docs/decisions/`
 - Seguridad: `docs/security/security-playbook.md`
 - Render: `docs/deployment/render-deployment.md`
@@ -92,4 +93,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 6 - Landing promocional y app local inicial.
+Etapa actual completada: Etapa 7 - Roles compartidos y estrategia local-first con Atlas.

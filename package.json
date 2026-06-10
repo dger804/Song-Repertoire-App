@@ -6,8 +6,9 @@
   "scripts": {
     "dev:api": "pnpm --filter @song-repertoire/api dev",
     "dev:web": "pnpm --filter @song-repertoire/web dev",
-    "build": "pnpm --filter @song-repertoire/web build && pnpm --filter @song-repertoire/api build",
+    "build": "pnpm --filter @song-repertoire/shared build && pnpm --filter @song-repertoire/web build && pnpm --filter @song-repertoire/api build",
     "build:api": "pnpm --filter @song-repertoire/api build",
+    "build:shared": "pnpm --filter @song-repertoire/shared build",
     "build:web": "pnpm --filter @song-repertoire/web build",
     "preview:api": "pnpm --filter @song-repertoire/api start",
     "preview:web": "pnpm --filter @song-repertoire/web preview",
