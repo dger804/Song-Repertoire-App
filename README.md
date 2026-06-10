@@ -10,7 +10,7 @@ Construir una aplicacion moderna, segura, mantenible y portable usando:
 - Backend: NestJS + TypeScript.
 - Base de datos: MongoDB + Mongoose.
 - Desarrollo local: Node.js, pnpm, Git y MongoDB Atlas desde el inicio.
-- Despliegue inicial: Render.
+- Despliegue futuro: por definir; Render queda documentado como opcion inicial evaluada.
 - Control de versiones: Git + GitHub.
 
 ## Alcance inicial
@@ -39,7 +39,7 @@ Queda fuera del MVP inicial:
 ## Restricciones de esta fase
 
 - No usar NAS.
-- No usar Tailscale.
+- No usar Tailscale como dependencia del proyecto sin una decision documentada.
 - No usar Hostinger como hosting principal.
 - No usar PHP ni MySQL como stack principal.
 - No usar Docker Compose como estrategia principal de produccion en Render.
@@ -92,4 +92,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 5 - Inicializacion de NestJS en `apps/api`.
+Etapa actual completada: Etapa 6 - Landing promocional y app local inicial.
