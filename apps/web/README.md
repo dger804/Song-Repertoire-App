@@ -19,4 +19,20 @@ Frontend de la aplicacion.
 
 ## Estado
 
-La aplicacion Astro aun no esta inicializada. Esta carpeta define el limite del frontend para la estructura monorepo.
+La aplicacion Astro ya esta inicializada con una pagina inicial minima.
+
+## Stack actual
+
+- Astro.
+- TypeScript.
+- Salida estatica por defecto.
+
+## Comandos
+
+Desde la raiz del repositorio:
+
+```bash
+pnpm dev:web
+pnpm build
+pnpm preview:web
+```

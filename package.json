@@ -4,7 +4,10 @@
   "private": true,
   "description": "Personal web app for managing songs and musical repertoires.",
   "scripts": {
-    "lint": "echo \"No apps initialized yet\"",
+    "dev:web": "pnpm --filter @song-repertoire/web dev",
+    "build": "pnpm --filter @song-repertoire/web build",
+    "preview:web": "pnpm --filter @song-repertoire/web preview",
+    "lint": "echo \"No lint configured yet\"",
     "test": "echo \"No tests configured yet\""
   },
   "packageManager": "pnpm@10.0.0"

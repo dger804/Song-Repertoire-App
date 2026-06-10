@@ -92,4 +92,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 3 - Preparacion del entorno local.
+Etapa actual completada: Etapa 4 - Inicializacion de Astro en `apps/web`.
