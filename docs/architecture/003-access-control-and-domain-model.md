@@ -68,3 +68,16 @@ Los roles deben existir en el modelo desde el inicio, pero no deben confundirse 
 - Los DTOs deberan validar forma y limites de entrada.
 - Los modelos de MongoDB no deben aceptar campos sensibles por asignacion masiva.
 - El primer usuario administrador requerira una estrategia explicita de bootstrap.
+
+## Persistencia inicial
+
+La API define schemas Mongoose para estas colecciones:
+
+| Coleccion | Schema | Indices iniciales |
+| --- | --- | --- |
+| `users` | `User` | `role`, `isActive` |
+| `categories` | `Category` | `name` unico |
+| `songs` | `Song` | `title`, `categoryIds` |
+| `repertoires` | `Repertoire` | `name`, `songs.songId` |
+
+Estos schemas preparan la persistencia, pero todavia no exponen endpoints CRUD ni reglas de autorizacion ejecutables.

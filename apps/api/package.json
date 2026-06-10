@@ -13,6 +13,7 @@
     "@nestjs/core": "^11.1.26",
     "@nestjs/mongoose": "^11.0.4",
     "@nestjs/platform-express": "^11.1.26",
+    "@song-repertoire/shared": "workspace:^",
     "mongoose": "^9.7.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"

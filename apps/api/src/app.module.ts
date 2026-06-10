@@ -4,7 +4,11 @@ import { MongooseModule } from "@nestjs/mongoose";
 import { AppConfigService } from "./config/app-config.service";
 import type { AppEnvironment } from "./config/environment";
 import configuration from "./config/configuration";
+import { CategoriesModule } from "./categories/categories.module";
 import { HealthController } from "./health.controller";
+import { RepertoiresModule } from "./repertoires/repertoires.module";
+import { SongsModule } from "./songs/songs.module";
+import { UsersModule } from "./users/users.module";
 
 @Module({
   imports: [
@@ -23,7 +27,11 @@ import { HealthController } from "./health.controller";
           dbName: appConfig.mongodbDbName
         };
       }
-    })
+    }),
+    UsersModule,
+    CategoriesModule,
+    SongsModule,
+    RepertoiresModule
   ],
   controllers: [HealthController],
   providers: [AppConfigService]

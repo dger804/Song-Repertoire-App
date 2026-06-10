@@ -25,6 +25,9 @@ importers:
       '@nestjs/platform-express':
         specifier: ^11.1.26
         version: 11.1.26(@nestjs/common@11.1.26(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.26)
+      '@song-repertoire/shared':
+        specifier: workspace:^
+        version: link:../../packages/shared
       mongoose:
         specifier: ^9.7.0
         version: 9.7.0

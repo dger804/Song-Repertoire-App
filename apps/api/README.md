@@ -31,6 +31,15 @@ La aplicacion NestJS ya esta inicializada con un endpoint `GET /health`.
 - Configuracion validada mediante variables de entorno.
 - MongoDB Atlas mediante Mongoose.
 
+## Modulos actuales
+
+- `UsersModule`: schema de usuarios y roles.
+- `CategoriesModule`: schema de categorias.
+- `SongsModule`: schema de canciones.
+- `RepertoiresModule`: schema de repertorios y orden de canciones.
+
+Los modulos actuales registran schemas de persistencia. Los endpoints CRUD se implementaran en una etapa posterior con DTOs y autorizacion en backend.
+
 ## Comandos
 
 Desde la raiz del repositorio:

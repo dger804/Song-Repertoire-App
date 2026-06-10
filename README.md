@@ -93,4 +93,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 8 - Configuracion de API con MongoDB Atlas.
+Etapa actual completada: Etapa 9 - Schemas Mongoose del dominio MVP.
