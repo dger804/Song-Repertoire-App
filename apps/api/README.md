@@ -28,6 +28,8 @@ La aplicacion NestJS ya esta inicializada con un endpoint `GET /health`.
 - NestJS.
 - TypeScript.
 - CORS explicito usando `CORS_ORIGIN`.
+- Configuracion validada mediante variables de entorno.
+- MongoDB Atlas mediante Mongoose.
 
 ## Comandos
 
@@ -38,3 +40,23 @@ pnpm dev:api
 pnpm build:api
 pnpm preview:api
 ```
+
+## Entorno local
+
+Crear un archivo local no versionado en:
+
+```text
+apps/api/.env
+```
+
+Variables requeridas:
+
+```text
+NODE_ENV=development
+PORT=3000
+CORS_ORIGIN=http://localhost:4321
+MONGODB_URI=mongodb+srv://<user>:<password>@<cluster-host>/?retryWrites=true&w=majority
+MONGODB_DB_NAME=song_repertoire_dev
+```
+
+No guardar credenciales reales en Git. `MONGODB_URI` debe usar un usuario de Atlas dedicado para desarrollo y permisos minimos.

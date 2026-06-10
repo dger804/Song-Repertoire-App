@@ -1,11 +1,16 @@
 import { Controller, Get } from "@nestjs/common";
+import { InjectConnection } from "@nestjs/mongoose";
+import type { Connection } from "mongoose";
 
 @Controller("health")
 export class HealthController {
+  constructor(@InjectConnection() private readonly connection: Connection) {}
+
   @Get()
   getHealth() {
     return {
       status: "ok",
+      database: this.connection.readyState === 1 ? "connected" : "not_connected",
       service: "song-repertoire-api",
       timestamp: new Date().toISOString()
     };

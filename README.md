@@ -93,4 +93,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 7 - Roles compartidos y estrategia local-first con Atlas.
+Etapa actual completada: Etapa 8 - Configuracion de API con MongoDB Atlas.

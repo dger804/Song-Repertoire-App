@@ -1,29 +1,19 @@
 import "reflect-metadata";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";
-
-function readPort(): number {
-  const rawPort = process.env.PORT ?? "3000";
-  const port = Number(rawPort);
-
-  if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error(`Invalid PORT value: ${rawPort}`);
-  }
-
-  return port;
-}
+import { AppConfigService } from "./config/app-config.service";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const corsOrigin = process.env.CORS_ORIGIN ?? "http://localhost:4321";
+  const config = app.get(AppConfigService).app;
 
   app.enableCors({
-    origin: corsOrigin,
+    origin: config.corsOrigin,
     methods: ["GET", "POST", "PATCH", "DELETE"],
     credentials: false
   });
 
-  await app.listen(readPort(), "0.0.0.0");
+  await app.listen(config.port, "0.0.0.0");
 }
 
 void bootstrap();
