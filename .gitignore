@@ -7,6 +7,7 @@ build/
 .astro/
 .nest/
 coverage/
+*.tsbuildinfo
 
 # Environment files
 .env

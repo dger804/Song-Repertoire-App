@@ -4,8 +4,12 @@
   "private": true,
   "description": "Personal web app for managing songs and musical repertoires.",
   "scripts": {
+    "dev:api": "pnpm --filter @song-repertoire/api dev",
     "dev:web": "pnpm --filter @song-repertoire/web dev",
-    "build": "pnpm --filter @song-repertoire/web build",
+    "build": "pnpm --filter @song-repertoire/web build && pnpm --filter @song-repertoire/api build",
+    "build:api": "pnpm --filter @song-repertoire/api build",
+    "build:web": "pnpm --filter @song-repertoire/web build",
+    "preview:api": "pnpm --filter @song-repertoire/api start",
     "preview:web": "pnpm --filter @song-repertoire/web preview",
     "lint": "echo \"No lint configured yet\"",
     "test": "echo \"No tests configured yet\""

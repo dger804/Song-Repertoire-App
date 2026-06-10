@@ -21,4 +21,20 @@ Backend de la aplicacion.
 
 ## Estado
 
-La aplicacion NestJS aun no esta inicializada. Esta carpeta define el limite del backend para la estructura monorepo.
+La aplicacion NestJS ya esta inicializada con un endpoint `GET /health`.
+
+## Stack actual
+
+- NestJS.
+- TypeScript.
+- CORS explicito usando `CORS_ORIGIN`.
+
+## Comandos
+
+Desde la raiz del repositorio:
+
+```bash
+pnpm dev:api
+pnpm build:api
+pnpm preview:api
+```

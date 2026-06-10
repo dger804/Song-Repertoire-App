@@ -92,4 +92,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 4 - Inicializacion de Astro en `apps/web`.
+Etapa actual completada: Etapa 5 - Inicializacion de NestJS en `apps/api`.
