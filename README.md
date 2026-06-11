@@ -94,4 +94,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 11 - CRUD inicial de canciones.
+Etapa actual completada: Etapa 12 - CRUD inicial de repertorios.

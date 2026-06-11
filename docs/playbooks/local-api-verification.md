@@ -69,9 +69,32 @@ Invoke-RestMethod -Uri http://127.0.0.1:3000/songs
 Invoke-RestMethod -Uri "http://127.0.0.1:3000/songs/$($song._id)"
 ```
 
+## Probar repertorios
+
+```powershell
+$repertoire = Invoke-RestMethod `
+  -Method Post `
+  -Uri http://127.0.0.1:3000/repertoires `
+  -ContentType 'application/json' `
+  -Body (@{
+    name = 'Repertorio de prueba'
+    description = 'Repertorio creado para verificar la API'
+    songs = @(
+      @{
+        songId = $song._id
+        order = 1
+      }
+    )
+  } | ConvertTo-Json -Depth 4)
+
+Invoke-RestMethod -Uri http://127.0.0.1:3000/repertoires
+Invoke-RestMethod -Uri "http://127.0.0.1:3000/repertoires/$($repertoire._id)"
+```
+
 ## Limpiar datos de prueba
 
 ```powershell
+Invoke-RestMethod -Method Delete -Uri "http://127.0.0.1:3000/repertoires/$($repertoire._id)"
 Invoke-RestMethod -Method Delete -Uri "http://127.0.0.1:3000/songs/$($song._id)"
 Invoke-RestMethod -Method Delete -Uri "http://127.0.0.1:3000/categories/$($category._id)"
 ```

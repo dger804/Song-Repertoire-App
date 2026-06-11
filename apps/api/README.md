@@ -36,9 +36,9 @@ La aplicacion NestJS ya esta inicializada con un endpoint `GET /health`.
 - `UsersModule`: schema de usuarios y roles.
 - `CategoriesModule`: schema y CRUD de categorias.
 - `SongsModule`: schema y CRUD de canciones.
-- `RepertoiresModule`: schema de repertorios y orden de canciones.
+- `RepertoiresModule`: schema y CRUD de repertorios con orden de canciones.
 
-Los endpoints de categorias y canciones ya usan DTOs y validacion global. La autorizacion en backend se implementara en una etapa posterior.
+Los endpoints de categorias, canciones y repertorios ya usan DTOs y validacion global. La autorizacion en backend se implementara en una etapa posterior.
 
 ## Endpoints actuales
 
@@ -54,6 +54,11 @@ GET    /songs/:id
 POST   /songs
 PATCH  /songs/:id
 DELETE /songs/:id
+GET    /repertoires
+GET    /repertoires/:id
+POST   /repertoires
+PATCH  /repertoires/:id
+DELETE /repertoires/:id
 ```
 
 ## Comandos
