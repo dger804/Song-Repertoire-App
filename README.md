@@ -93,4 +93,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 9 - Schemas Mongoose del dominio MVP.
+Etapa actual completada: Etapa 10 - CRUD inicial de categorias.
