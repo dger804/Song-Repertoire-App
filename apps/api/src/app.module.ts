@@ -13,7 +13,7 @@ import { UsersModule } from "./users/users.module";
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: ["apps/api/.env", ".env"],
+      envFilePath: ["apps/api/.env", ".env", "../../.env"],
       isGlobal: true,
       load: [configuration]
     }),
