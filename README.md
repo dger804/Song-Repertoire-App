@@ -88,9 +88,10 @@ song-repertoire-app/
 - Migracion futura: `docs/deployment/migration-plan.md`
 - Backup y restore: `docs/backup-restore/mongodb-backup-restore.md`
 - Preparacion local: `docs/playbooks/local-development-setup.md`
+- Verificacion API local: `docs/playbooks/local-api-verification.md`
 - Portabilidad de skills: `docs/playbooks/codex-skills-portability.md`
 - Skills aprendidas: `docs/codex-skills/`
 
 ## Estado
 
-Etapa actual completada: Etapa 10 - CRUD inicial de categorias.
+Etapa actual completada: Etapa 11 - CRUD inicial de canciones.

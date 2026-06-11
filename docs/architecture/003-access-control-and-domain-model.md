@@ -80,4 +80,4 @@ La API define schemas Mongoose para estas colecciones:
 | `songs` | `Song` | `title`, `categoryIds` |
 | `repertoires` | `Repertoire` | `name`, `songs.songId` |
 
-`categories` ya expone un primer CRUD con DTOs y validacion global. Las demas colecciones preparan persistencia, pero todavia no exponen endpoints CRUD ni reglas de autorizacion ejecutables.
+`categories` y `songs` ya exponen CRUD con DTOs y validacion global. Las demas colecciones preparan persistencia, pero todavia no exponen endpoints CRUD ni reglas de autorizacion ejecutables.
