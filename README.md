@@ -94,4 +94,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 15 - Prueba local y preparacion para Tailscale.
+Etapa actual completada: Etapa 16 - CRUD editable en frontend.

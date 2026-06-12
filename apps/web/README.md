@@ -38,11 +38,14 @@ La pantalla `/app` permite:
 
 - listar categorias desde la API;
 - crear categorias;
+- editar y eliminar categorias;
 - listar canciones desde la API;
 - crear canciones con categorias asociadas;
+- editar y eliminar canciones;
 - seleccionar canciones existentes;
 - ordenar canciones dentro de un repertorio;
-- crear repertorios en MongoDB Atlas mediante la API.
+- crear repertorios en MongoDB Atlas mediante la API;
+- editar y eliminar repertorios.
 
 ## Comandos
 
