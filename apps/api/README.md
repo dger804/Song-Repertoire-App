@@ -89,4 +89,10 @@ MONGODB_URI=mongodb+srv://<user>:<password>@<cluster-host>/?retryWrites=true&w=m
 MONGODB_DB_NAME=song_repertoire_dev
 ```
 
+`CORS_ORIGIN` acepta varios origenes separados por coma. Para probar desde un celular por Tailscale, agregar tambien el origen del frontend visto desde el celular:
+
+```text
+CORS_ORIGIN=http://localhost:4321,http://100.x.y.z:4321
+```
+
 No guardar credenciales reales en Git. `MONGODB_URI` debe usar un usuario de Atlas dedicado para desarrollo y permisos minimos.

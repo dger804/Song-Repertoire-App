@@ -27,6 +27,7 @@ La aplicacion Astro ya tiene landing publica y una pantalla local de trabajo en 
 - TypeScript.
 - Salida estatica por defecto.
 - Integracion HTTP con la API usando `PUBLIC_API_BASE_URL`.
+- Inferencia local de API cuando `PUBLIC_API_BASE_URL` queda vacio.
 
 ## Pantallas actuales
 
@@ -52,3 +53,11 @@ pnpm dev:web
 pnpm build
 pnpm preview:web
 ```
+
+Para probar desde otro dispositivo en la red privada, iniciar el frontend con host publico local:
+
+```bash
+pnpm dev:web:network
+```
+
+Si `PUBLIC_API_BASE_URL` queda vacio, `/app` usa el mismo host del navegador y puerto `3000` para llamar la API. Por ejemplo, si se abre `http://100.x.y.z:4321/app`, la UI llamara `http://100.x.y.z:3000`.

@@ -1,7 +1,7 @@
 export interface AppEnvironment {
   nodeEnv: string;
   port: number;
-  corsOrigin: string;
+  corsOrigins: string[];
   mongodbUri: string;
   mongodbDbName: string;
 }
@@ -27,11 +27,25 @@ function readPort(): number {
   return port;
 }
 
+function readCorsOrigins(): string[] {
+  const rawOrigins = process.env.CORS_ORIGIN ?? "http://localhost:4321";
+  const origins = rawOrigins
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+
+  if (origins.length === 0) {
+    throw new Error("CORS_ORIGIN must contain at least one origin.");
+  }
+
+  return origins;
+}
+
 export function loadEnvironment(): AppEnvironment {
   return {
     nodeEnv: process.env.NODE_ENV ?? "development",
     port: readPort(),
-    corsOrigin: process.env.CORS_ORIGIN ?? "http://localhost:4321",
+    corsOrigins: readCorsOrigins(),
     mongodbUri: requireEnv("MONGODB_URI"),
     mongodbDbName: requireEnv("MONGODB_DB_NAME")
   };

@@ -94,4 +94,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 14 - Categorias en frontend y canciones categorizadas.
+Etapa actual completada: Etapa 15 - Prueba local y preparacion para Tailscale.

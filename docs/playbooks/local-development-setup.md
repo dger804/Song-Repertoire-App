@@ -86,6 +86,44 @@ apps/api/.env
 
 Ese archivo debe basarse en `.env.example`, pero con valores reales solo en la maquina local o en Render.
 
+## Prueba local y Tailscale
+
+Para probar en el mismo equipo:
+
+```bash
+pnpm dev:api
+pnpm dev:web
+```
+
+Abrir:
+
+```text
+http://localhost:4321/app
+```
+
+Para probar desde un celular conectado por Tailscale:
+
+1. Mantener la API escuchando en el puerto `3000`.
+2. Iniciar el frontend escuchando en todas las interfaces:
+
+```bash
+pnpm dev:web:network
+```
+
+3. Agregar el origen del celular a `CORS_ORIGIN`, separado por coma:
+
+```text
+CORS_ORIGIN=http://localhost:4321,http://100.x.y.z:4321
+```
+
+4. Abrir desde el celular:
+
+```text
+http://100.x.y.z:4321/app
+```
+
+Si `PUBLIC_API_BASE_URL` queda vacio, la UI llamara automaticamente la API usando el mismo host del navegador y el puerto `3000`.
+
 ## Docker
 
 Docker no se usa en esta etapa.

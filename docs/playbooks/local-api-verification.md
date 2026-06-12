@@ -16,6 +16,12 @@ MONGODB_URI=mongodb+srv://<user>:<password>@<cluster-host>/?retryWrites=true&w=m
 MONGODB_DB_NAME=song_repertoire_dev
 ```
 
+Para probar la UI desde otro dispositivo por Tailscale, `CORS_ORIGIN` puede incluir varios origenes separados por coma:
+
+```text
+CORS_ORIGIN=http://localhost:4321,http://100.x.y.z:4321
+```
+
 No subir este archivo a Git.
 
 ## Levantar API

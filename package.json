@@ -6,6 +6,7 @@
   "scripts": {
     "dev:api": "pnpm --filter @song-repertoire/api dev",
     "dev:web": "pnpm --filter @song-repertoire/web dev",
+    "dev:web:network": "pnpm --filter @song-repertoire/web dev --host 0.0.0.0 --port 4321",
     "build": "pnpm --filter @song-repertoire/shared build && pnpm --filter @song-repertoire/web build && pnpm --filter @song-repertoire/api build",
     "build:api": "pnpm --filter @song-repertoire/api build",
     "build:shared": "pnpm --filter @song-repertoire/shared build",

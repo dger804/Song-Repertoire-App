@@ -1,5 +1,5 @@
 ---
-const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000";
+const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 ---
 
 <html lang="es">
@@ -13,7 +13,7 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
     <title>App local | Song Repertoire</title>
   </head>
   <body>
-    <main class="layout" data-api-base-url={apiBaseUrl}>
+    <main class="layout" data-api-base-url={configuredApiBaseUrl}>
       <aside class="sidebar" aria-label="Navegacion de la aplicacion">
         <a class="brand" href="/">Song Repertoire</a>
         <nav>
@@ -157,7 +157,8 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
 
     <script>
       const root = document.querySelector(".layout");
-      const apiBaseUrl = root?.dataset.apiBaseUrl ?? "http://localhost:3000";
+      const configuredApiBaseUrl = root?.dataset.apiBaseUrl ?? "";
+      const apiBaseUrl = resolveApiBaseUrl(configuredApiBaseUrl);
 
       const state = {
         categories: [],
@@ -203,6 +204,31 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
         if (!elements.feedback) return;
         elements.feedback.textContent = message;
         elements.feedback.dataset.type = type;
+      }
+
+      function isLoopbackHost(hostname) {
+        return ["localhost", "127.0.0.1", "::1", "[::1]"].includes(hostname);
+      }
+
+      function resolveApiBaseUrl(configuredUrl) {
+        const fallbackUrl = `${window.location.protocol}//${window.location.hostname}:3000`;
+        const trimmedUrl = configuredUrl.trim();
+
+        if (trimmedUrl.length === 0) {
+          return fallbackUrl;
+        }
+
+        try {
+          const url = new URL(trimmedUrl);
+
+          if (isLoopbackHost(url.hostname) && !isLoopbackHost(window.location.hostname)) {
+            url.hostname = window.location.hostname;
+          }
+
+          return url.origin;
+        } catch {
+          return trimmedUrl;
+        }
       }
 
       async function apiRequest(path, options = {}) {
