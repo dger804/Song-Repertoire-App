@@ -19,13 +19,27 @@ Frontend de la aplicacion.
 
 ## Estado
 
-La aplicacion Astro ya esta inicializada con una pagina inicial minima.
+La aplicacion Astro ya tiene landing publica y una pantalla local de trabajo en `/app`.
 
 ## Stack actual
 
 - Astro.
 - TypeScript.
 - Salida estatica por defecto.
+- Integracion HTTP con la API usando `PUBLIC_API_BASE_URL`.
+
+## Pantallas actuales
+
+- `/`: landing promocional.
+- `/app`: constructor local de repertorios.
+
+La pantalla `/app` permite:
+
+- listar canciones desde la API;
+- crear canciones;
+- seleccionar canciones existentes;
+- ordenar canciones dentro de un repertorio;
+- crear repertorios en MongoDB Atlas mediante la API.
 
 ## Comandos
 

@@ -94,4 +94,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 12 - CRUD inicial de repertorios.
+Etapa actual completada: Etapa 13 - Constructor de repertorios en frontend.
