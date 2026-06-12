@@ -35,8 +35,10 @@ La aplicacion Astro ya tiene landing publica y una pantalla local de trabajo en 
 
 La pantalla `/app` permite:
 
+- listar categorias desde la API;
+- crear categorias;
 - listar canciones desde la API;
-- crear canciones;
+- crear canciones con categorias asociadas;
 - seleccionar canciones existentes;
 - ordenar canciones dentro de un repertorio;
 - crear repertorios en MongoDB Atlas mediante la API.

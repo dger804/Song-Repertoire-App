@@ -100,12 +100,46 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
                   required
                   rows="7"></textarea>
               </label>
+              <fieldset class="category-picker">
+                <legend>Categorias</legend>
+                <div id="song-category-options" class="category-options" aria-live="polite"></div>
+              </fieldset>
               <label class="checkbox-row">
                 <input id="add-created-song" type="checkbox" checked />
                 Agregar al repertorio
               </label>
               <button class="secondary-button" type="submit">Guardar cancion</button>
             </form>
+          </section>
+
+          <section class="panel category-panel" aria-labelledby="categories-title">
+            <div class="panel-heading">
+              <h2 id="categories-title">Categorias</h2>
+              <span id="category-count">0</span>
+            </div>
+            <form id="category-form" class="form-grid">
+              <label>
+                Nombre
+                <input
+                  id="category-name"
+                  maxlength="80"
+                  minlength="2"
+                  name="name"
+                  required
+                  type="text"
+                />
+              </label>
+              <label>
+                Descripcion
+                <textarea
+                  id="category-description"
+                  maxlength="240"
+                  name="description"
+                  rows="3"></textarea>
+              </label>
+              <button class="secondary-button" type="submit">Guardar categoria</button>
+            </form>
+            <div id="category-list" class="category-list" aria-live="polite"></div>
           </section>
 
           <section class="panel repertoire-list-panel" aria-labelledby="repertoires-title">
@@ -126,6 +160,7 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
       const apiBaseUrl = root?.dataset.apiBaseUrl ?? "http://localhost:3000";
 
       const state = {
+        categories: [],
         songs: [],
         repertoires: [],
         selectedSongs: []
@@ -133,6 +168,11 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
 
       const elements = {
         addCreatedSong: document.querySelector("#add-created-song"),
+        categoryCount: document.querySelector("#category-count"),
+        categoryDescription: document.querySelector("#category-description"),
+        categoryForm: document.querySelector("#category-form"),
+        categoryList: document.querySelector("#category-list"),
+        categoryName: document.querySelector("#category-name"),
         connectionStatus: document.querySelector("#connection-status"),
         feedback: document.querySelector("#feedback"),
         refreshButton: document.querySelector("#refresh-button"),
@@ -143,6 +183,7 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
         repertoireName: document.querySelector("#repertoire-name"),
         selectedCount: document.querySelector("#selected-count"),
         selectedSongs: document.querySelector("#selected-songs"),
+        songCategoryOptions: document.querySelector("#song-category-options"),
         songForm: document.querySelector("#song-form"),
         songList: document.querySelector("#song-list"),
         songLyrics: document.querySelector("#song-lyrics"),
@@ -186,6 +227,13 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
 
       function getSongTitle(songId) {
         return state.songs.find((song) => song._id === songId)?.title ?? "Cancion";
+      }
+
+      function getCategoryNames(categoryIds = []) {
+        const ids = new Set(categoryIds.map((id) => String(id)));
+        return state.categories
+          .filter((category) => ids.has(String(category._id)))
+          .map((category) => category.name);
       }
 
       function addSongToRepertoire(songId) {
@@ -236,18 +284,62 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
         }
 
         elements.songList.innerHTML = state.songs
-          .map(
-            (song) => `
+          .map((song) => {
+            const categoryNames = getCategoryNames(song.categoryIds ?? []);
+            const categoryText = categoryNames.length > 0 ? categoryNames.join(", ") : "Sin categoria";
+
+            return `
               <article class="song-row">
                 <div>
                   <h3>${escapeHtml(song.title)}</h3>
                   <p>${escapeHtml((song.lyrics ?? "").slice(0, 96))}</p>
+                  <small>${escapeHtml(categoryText)}</small>
                 </div>
                 <button type="button" data-add-song="${escapeHtml(song._id)}">Agregar</button>
               </article>
-            `
-          )
+            `;
+          })
           .join("");
+      }
+
+      function renderCategories() {
+        if (elements.categoryCount) {
+          elements.categoryCount.textContent = String(state.categories.length);
+        }
+
+        if (elements.categoryList) {
+          elements.categoryList.innerHTML =
+            state.categories.length === 0
+              ? '<p class="empty">Sin categorias todavia.</p>'
+              : state.categories
+                  .map(
+                    (category) => `
+                      <article class="category-row">
+                        <div>
+                          <h3>${escapeHtml(category.name)}</h3>
+                          <p>${escapeHtml(category.description || "Sin descripcion")}</p>
+                        </div>
+                      </article>
+                    `
+                  )
+                  .join("");
+        }
+
+        if (elements.songCategoryOptions) {
+          elements.songCategoryOptions.innerHTML =
+            state.categories.length === 0
+              ? '<p class="empty">Sin categorias.</p>'
+              : state.categories
+                  .map(
+                    (category) => `
+                      <label class="category-option">
+                        <input name="song-category" type="checkbox" value="${escapeHtml(category._id)}" />
+                        <span>${escapeHtml(category.name)}</span>
+                      </label>
+                    `
+                  )
+                  .join("");
+        }
       }
 
       function renderSelectedSongs() {
@@ -303,12 +395,14 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
 
       async function loadData() {
         try {
-          const [health, songs, repertoires] = await Promise.all([
+          const [health, songs, repertoires, categories] = await Promise.all([
             apiRequest("/health"),
             apiRequest("/songs"),
-            apiRequest("/repertoires")
+            apiRequest("/repertoires"),
+            apiRequest("/categories")
           ]);
 
+          state.categories = categories;
           state.songs = songs;
           state.repertoires = repertoires;
 
@@ -318,6 +412,7 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
             elements.connectionStatus.dataset.type = "ok";
           }
 
+          renderCategories();
           renderSongs();
           renderSelectedSongs();
           renderRepertoires();
@@ -358,12 +453,40 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
         void loadData();
       });
 
+      elements.categoryForm?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        try {
+          const category = await apiRequest("/categories", {
+            body: JSON.stringify({
+              description: elements.categoryDescription?.value || undefined,
+              name: elements.categoryName?.value ?? ""
+            }),
+            method: "POST"
+          });
+
+          state.categories.push(category);
+          state.categories.sort((a, b) => a.name.localeCompare(b.name));
+          elements.categoryForm?.reset();
+          renderCategories();
+          renderSongs();
+          showFeedback("Categoria guardada.", "ok");
+        } catch (error) {
+          showFeedback(error instanceof Error ? error.message : "No se pudo guardar la categoria.", "error");
+        }
+      });
+
       elements.songForm?.addEventListener("submit", async (event) => {
         event.preventDefault();
 
         try {
+          const categoryIds = Array.from(
+            document.querySelectorAll('input[name="song-category"]:checked')
+          ).map((input) => input.value);
+
           const song = await apiRequest("/songs", {
             body: JSON.stringify({
+              categoryIds,
               title: elements.songTitle?.value ?? "",
               lyrics: elements.songLyrics?.value ?? ""
             }),
@@ -380,6 +503,7 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
 
           elements.songForm?.reset();
           if (elements.addCreatedSong) elements.addCreatedSong.checked = true;
+          renderCategories();
           showFeedback("Cancion guardada.", "ok");
         } catch (error) {
           showFeedback(error instanceof Error ? error.message : "No se pudo guardar la cancion.", "error");
@@ -578,7 +702,8 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
   }
 
   .song-picker,
-  .quick-song {
+  .quick-song,
+  .category-panel {
     grid-column: 2;
   }
 
@@ -588,12 +713,24 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
     margin-top: 16px;
   }
 
-  label {
+  label,
+  legend {
     display: grid;
     gap: 7px;
     color: #39485a;
     font-size: 0.88rem;
     font-weight: 780;
+  }
+
+  fieldset {
+    min-width: 0;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  legend {
+    padding: 0 6px;
   }
 
   input,
@@ -652,6 +789,7 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
   }
 
   .song-list,
+  .category-list,
   .selected-list,
   .repertoire-list {
     display: grid;
@@ -659,8 +797,32 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
     margin-top: 16px;
   }
 
+  .category-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .category-option {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #d9e0e8;
+    border-radius: 8px;
+    padding: 7px 10px;
+    color: #2f3b4d;
+    background: #fbfcfe;
+  }
+
+  .category-option input {
+    width: 16px;
+    height: 16px;
+  }
+
   .song-row,
-  .repertoire-row {
+  .repertoire-row,
+  .category-row {
     min-height: 76px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -672,11 +834,20 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
   }
 
   .song-row p,
+  .song-row small,
   .repertoire-row p,
+  .category-row p,
   .empty {
     margin-bottom: 0;
     color: #647386;
     line-height: 1.45;
+  }
+
+  .song-row small {
+    display: block;
+    margin-top: 7px;
+    font-size: 0.8rem;
+    font-weight: 800;
   }
 
   .selected-song {
@@ -722,7 +893,8 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
     .builder,
     .repertoire-list-panel,
     .song-picker,
-    .quick-song {
+    .quick-song,
+    .category-panel {
       grid-column: auto;
     }
 
@@ -745,6 +917,7 @@ const apiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "http://localhost:3000
     .panel-heading,
     .song-row,
     .repertoire-row,
+    .category-row,
     .selected-song {
       grid-template-columns: 1fr;
     }

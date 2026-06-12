@@ -94,4 +94,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 13 - Constructor de repertorios en frontend.
+Etapa actual completada: Etapa 14 - Categorias en frontend y canciones categorizadas.
