@@ -32,10 +32,14 @@ La aplicacion Astro ya tiene landing publica y una pantalla local de trabajo en 
 ## Pantallas actuales
 
 - `/`: landing promocional.
-- `/app`: constructor local de repertorios.
+- `/app`: dashboard local de repertorios.
 
 La pantalla `/app` permite:
 
+- ver un dashboard con listado y conteos de repertorios/canciones;
+- buscar repertorios por nombre o descripcion;
+- iniciar un nuevo repertorio desde el dashboard;
+- abrir un repertorio existente para editarlo;
 - listar categorias desde la API;
 - crear categorias;
 - editar y eliminar categorias;

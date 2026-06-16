@@ -27,12 +27,47 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         <header class="page-header">
           <div>
             <p class="eyebrow">App local</p>
-            <h1 id="page-title">Constructor de repertorios</h1>
+            <h1 id="page-title">Dashboard de repertorios</h1>
           </div>
           <p id="connection-status" class="status" role="status">Conectando</p>
         </header>
 
         <div class="workspace">
+          <section class="panel repertoire-list-panel" aria-labelledby="repertoires-title">
+            <div class="panel-heading dashboard-heading">
+              <div>
+                <p class="panel-kicker">Gestion local</p>
+                <h2 id="repertoires-title">Repertorios</h2>
+              </div>
+              <button id="new-repertoire-button" class="primary-button" type="button">
+                Nuevo repertorio
+              </button>
+            </div>
+
+            <div class="dashboard-metrics" aria-label="Resumen de repertorios">
+              <div>
+                <strong id="repertoire-count">0</strong>
+                <span>repertorios</span>
+              </div>
+              <div>
+                <strong id="dashboard-song-count">0</strong>
+                <span>canciones</span>
+              </div>
+            </div>
+
+            <label class="search-field">
+              Buscar
+              <input
+                id="repertoire-search"
+                autocomplete="off"
+                placeholder="Nombre o descripcion"
+                type="search"
+              />
+            </label>
+
+            <div id="repertoire-list" class="repertoire-list" aria-live="polite"></div>
+          </section>
+
           <section class="panel builder" aria-labelledby="builder-title">
             <div class="panel-heading">
               <h2 id="builder-title">Nuevo repertorio</h2>
@@ -163,13 +198,6 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
             <div id="category-list" class="category-list" aria-live="polite"></div>
           </section>
 
-          <section class="panel repertoire-list-panel" aria-labelledby="repertoires-title">
-            <div class="panel-heading">
-              <h2 id="repertoires-title">Repertorios</h2>
-              <span id="repertoire-count">0</span>
-            </div>
-            <div id="repertoire-list" class="repertoire-list" aria-live="polite"></div>
-          </section>
         </div>
 
         <p id="feedback" class="feedback" role="status"></p>
@@ -187,6 +215,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         editingRepertoireId: null,
         editingSongId: null,
         pendingDelete: null,
+        repertoireSearchTerm: "",
         songs: [],
         repertoires: [],
         selectedSongs: []
@@ -206,7 +235,9 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         categoryName: document.querySelector("#category-name"),
         categorySubmitButton: document.querySelector("#category-submit-button"),
         connectionStatus: document.querySelector("#connection-status"),
+        dashboardSongCount: document.querySelector("#dashboard-song-count"),
         feedback: document.querySelector("#feedback"),
+        newRepertoireButton: document.querySelector("#new-repertoire-button"),
         quickSongTitle: document.querySelector("#quick-song-title"),
         refreshButton: document.querySelector("#refresh-button"),
         repertoireCount: document.querySelector("#repertoire-count"),
@@ -214,6 +245,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         repertoireForm: document.querySelector("#repertoire-form"),
         repertoireList: document.querySelector("#repertoire-list"),
         repertoireName: document.querySelector("#repertoire-name"),
+        repertoireSearch: document.querySelector("#repertoire-search"),
         repertoireSubmitButton: document.querySelector("#repertoire-submit-button"),
         selectedCount: document.querySelector("#selected-count"),
         selectedSongs: document.querySelector("#selected-songs"),
@@ -428,6 +460,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         elements.repertoireForm?.reset();
         renderSelectedSongs();
         updateFormModes();
+        renderRepertoires();
       }
 
       function startEditCategory(categoryId) {
@@ -467,6 +500,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         }
         renderSelectedSongs();
         updateFormModes();
+        renderRepertoires();
         elements.repertoireName?.focus();
       }
 
@@ -628,30 +662,59 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         return items.sort((a, b) => String(a.title ?? "").localeCompare(String(b.title ?? "")));
       }
 
+      function renderDashboardMetrics() {
+        if (elements.repertoireCount) {
+          elements.repertoireCount.textContent = String(state.repertoires.length);
+        }
+
+        if (elements.dashboardSongCount) {
+          elements.dashboardSongCount.textContent = String(state.songs.length);
+        }
+      }
+
       function renderRepertoires() {
         if (!elements.repertoireList || !elements.repertoireCount) return;
-        elements.repertoireCount.textContent = String(state.repertoires.length);
+        renderDashboardMetrics();
 
         if (state.repertoires.length === 0) {
           elements.repertoireList.innerHTML = '<p class="empty">Sin repertorios todavia.</p>';
           return;
         }
 
-        elements.repertoireList.innerHTML = state.repertoires
+        const query = state.repertoireSearchTerm.trim().toLocaleLowerCase();
+        const repertoires = query
+          ? state.repertoires.filter((repertoire) =>
+              `${repertoire.name ?? ""} ${repertoire.description ?? ""}`
+                .toLocaleLowerCase()
+                .includes(query)
+            )
+          : state.repertoires;
+
+        if (repertoires.length === 0) {
+          elements.repertoireList.innerHTML = '<p class="empty">Sin repertorios con ese filtro.</p>';
+          return;
+        }
+
+        elements.repertoireList.innerHTML = repertoires
           .map(
-            (repertoire) => `
-              <article class="repertoire-row">
+            (repertoire) => {
+              const isActive = state.editingRepertoireId === repertoire._id;
+              const songCount = normalizeRepertoireSongs(repertoire.songs ?? []).length;
+
+              return `
+              <article class="repertoire-row${isActive ? " is-active" : ""}" ${isActive ? 'aria-current="true"' : ""}>
                 <div>
                   <h3>${escapeHtml(repertoire.name)}</h3>
                   <p>${escapeHtml(repertoire.description || "Sin descripcion")}</p>
                 </div>
                 <div class="row-actions">
-                  <span>${repertoire.songs?.length ?? 0} canciones</span>
-                  <button class="ghost-button" type="button" data-edit-repertoire="${escapeHtml(repertoire._id)}">Editar</button>
+                  <span>${songCount} canciones</span>
+                  <button class="${isActive ? "ghost-button" : "secondary-button"}" type="button" data-edit-repertoire="${escapeHtml(repertoire._id)}">${isActive ? "Abierto" : "Abrir"}</button>
                   ${renderDeleteControls("repertoire", repertoire._id)}
                 </div>
               </article>
-            `
+            `;
+            }
           )
           .join("");
       }
@@ -749,6 +812,17 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         void loadData();
       });
 
+      elements.newRepertoireButton?.addEventListener("click", () => {
+        resetRepertoireForm();
+        showFeedback("Listo para crear un repertorio.", "ok");
+        elements.repertoireName?.focus();
+      });
+
+      elements.repertoireSearch?.addEventListener("input", () => {
+        state.repertoireSearchTerm = elements.repertoireSearch?.value ?? "";
+        renderRepertoires();
+      });
+
       elements.cancelCategoryEdit?.addEventListener("click", () => {
         resetCategoryForm();
       });
@@ -796,6 +870,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           if (state.editingSongId === songId) resetSongForm();
           renderSongs();
           renderSelectedSongs();
+          renderRepertoires();
           showFeedback("Cancion eliminada.", "ok");
         } catch (error) {
           showFeedback(error instanceof Error ? error.message : "No se pudo eliminar la cancion.", "error");
@@ -873,6 +948,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           state.songs = wasEditing ? replaceById(state.songs, song) : [...state.songs, song];
           sortByTitle(state.songs);
           renderSongs();
+          renderRepertoires();
 
           if (!wasEditing && elements.addCreatedSong?.checked) {
             addSongToRepertoire(song._id);
@@ -1041,6 +1117,14 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     font-size: 0.98rem;
   }
 
+  .panel-kicker {
+    margin: 0 0 6px;
+    color: #647386;
+    font-size: 0.72rem;
+    font-weight: 850;
+    text-transform: uppercase;
+  }
+
   .status,
   .feedback {
     min-height: 34px;
@@ -1090,6 +1174,40 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     grid-column: 2;
   }
 
+  .dashboard-heading {
+    align-items: center;
+  }
+
+  .dashboard-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .dashboard-metrics div {
+    min-height: 74px;
+    display: grid;
+    align-content: center;
+    gap: 4px;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+    background: #fbfcfe;
+    padding: 12px;
+  }
+
+  .dashboard-metrics strong {
+    color: #17202e;
+    font-size: 1.6rem;
+    line-height: 1;
+  }
+
+  .dashboard-metrics span {
+    color: #647386;
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+
   .form-grid {
     display: grid;
     gap: 14px;
@@ -1128,6 +1246,10 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
   textarea {
     resize: vertical;
+  }
+
+  .search-field {
+    margin-top: 16px;
   }
 
   .checkbox-row {
@@ -1240,6 +1362,12 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     border: 1px solid #e3e8ef;
     border-radius: 8px;
     padding: 13px;
+  }
+
+  .repertoire-row.is-active {
+    border-color: #c96757;
+    background: #fff8f6;
+    box-shadow: inset 3px 0 0 #b24d3d;
   }
 
   .song-row p,

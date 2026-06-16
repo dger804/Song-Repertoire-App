@@ -94,4 +94,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 16 - CRUD editable en frontend.
+Etapa actual completada: Etapa 17 - Dashboard de repertorios.
