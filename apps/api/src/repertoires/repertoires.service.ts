@@ -15,11 +15,19 @@ import {
 interface RepertoirePersistenceSong {
   songId: Types.ObjectId;
   order: number;
+  tagIds: string[];
+}
+
+interface RepertoirePersistenceTag {
+  tagId: string;
+  name: string;
+  color: string;
 }
 
 interface RepertoirePersistencePayload {
   name?: string;
   description?: string;
+  tags?: RepertoirePersistenceTag[];
   songs?: RepertoirePersistenceSong[];
 }
 
@@ -101,14 +109,41 @@ export class RepertoiresService {
       payload.description = dto.description;
     }
 
+    const validTagIds = new Set<string>();
+
+    if (dto.tags !== undefined) {
+      payload.tags = dto.tags.map((tag) => {
+        validTagIds.add(tag.tagId);
+
+        return {
+          color: tag.color,
+          name: tag.name,
+          tagId: tag.tagId
+        };
+      });
+    }
+
     if (dto.songs !== undefined) {
       payload.songs = dto.songs.map((song) => ({
         songId: this.parseObjectId(song.songId, "song"),
-        order: song.order
+        order: song.order,
+        tagIds: this.normalizeSongTagIds(song.tagIds ?? [], validTagIds)
       }));
     }
 
     return payload;
+  }
+
+  private normalizeSongTagIds(tagIds: string[], validTagIds: Set<string>): string[] {
+    const uniqueTagIds = [...new Set(tagIds)];
+
+    for (const tagId of uniqueTagIds) {
+      if (!validTagIds.has(tagId)) {
+        throw new BadRequestException("Song tag does not exist in repertoire.");
+      }
+    }
+
+    return uniqueTagIds;
   }
 
   private parseObjectId(id: string, label: string): Types.ObjectId {

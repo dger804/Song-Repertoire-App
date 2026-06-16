@@ -37,6 +37,7 @@ La aplicacion Astro ya tiene landing publica y una pantalla local de trabajo en 
 La pantalla `/app` permite:
 
 - ver un dashboard con listado y conteos de repertorios/canciones;
+- ver repertorios y canciones en formato de tarjetas;
 - buscar repertorios por nombre o descripcion;
 - iniciar un nuevo repertorio desde el dashboard;
 - abrir un repertorio existente para editarlo;
@@ -51,6 +52,8 @@ La pantalla `/app` permite:
 - editar y eliminar canciones;
 - seleccionar canciones existentes;
 - ordenar canciones dentro de un repertorio;
+- crear etiquetas internas dentro del repertorio;
+- asignar etiquetas internas a canciones del repertorio;
 - crear repertorios en MongoDB Atlas mediante la API;
 - editar y eliminar repertorios.
 

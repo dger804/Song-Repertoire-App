@@ -96,6 +96,37 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                   rows="3"></textarea>
               </label>
 
+              <fieldset class="tag-builder">
+                <legend>Etiquetas internas</legend>
+                <div class="tag-form-row">
+                  <label>
+                    Nombre
+                    <input
+                      id="repertoire-tag-name"
+                      maxlength="40"
+                      minlength="2"
+                      placeholder="Entrada, cierre..."
+                      type="text"
+                    />
+                  </label>
+                  <label>
+                    Color
+                    <select id="repertoire-tag-color">
+                      <option value="slate">Gris</option>
+                      <option value="red">Rojo</option>
+                      <option value="amber">Ambar</option>
+                      <option value="green">Verde</option>
+                      <option value="blue">Azul</option>
+                      <option value="purple">Morado</option>
+                    </select>
+                  </label>
+                  <button id="add-repertoire-tag" class="ghost-button" type="button">
+                    Agregar etiqueta
+                  </button>
+                </div>
+                <div id="repertoire-tags" class="tag-list" aria-live="polite"></div>
+              </fieldset>
+
               <div class="selected-list" id="selected-songs" aria-live="polite"></div>
 
               <div class="form-actions">
@@ -245,6 +276,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         editingRepertoireId: null,
         editingSongId: null,
         pendingDelete: null,
+        repertoireTags: [],
         repertoireSearchTerm: "",
         showAvailableSongsOnly: false,
         songCategoryFilter: "",
@@ -256,6 +288,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
       const elements = {
         addCreatedSong: document.querySelector("#add-created-song"),
+        addRepertoireTag: document.querySelector("#add-repertoire-tag"),
         addCreatedSongRow: document.querySelector("#add-created-song-row"),
         builderTitle: document.querySelector("#builder-title"),
         cancelCategoryEdit: document.querySelector("#cancel-category-edit"),
@@ -279,6 +312,9 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         repertoireList: document.querySelector("#repertoire-list"),
         repertoireName: document.querySelector("#repertoire-name"),
         repertoireSearch: document.querySelector("#repertoire-search"),
+        repertoireTagColor: document.querySelector("#repertoire-tag-color"),
+        repertoireTagList: document.querySelector("#repertoire-tags"),
+        repertoireTagName: document.querySelector("#repertoire-tag-name"),
         repertoireSubmitButton: document.querySelector("#repertoire-submit-button"),
         selectedCount: document.querySelector("#selected-count"),
         selectedSongs: document.querySelector("#selected-songs"),
@@ -404,9 +440,38 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           .sort((a, b) => Number(a.order ?? 0) - Number(b.order ?? 0))
           .map((song, index) => ({
             songId: getRepertoireSongId(song),
-            order: index + 1
+            order: index + 1,
+            tagIds: Array.isArray(song.tagIds) ? song.tagIds.map((id) => String(id)) : []
           }))
           .filter((song) => song.songId.length > 0);
+      }
+
+      function normalizeRepertoireTags(tags = []) {
+        return tags
+          .map((tag) => ({
+            color: getTagColor(tag.color),
+            name: String(tag.name ?? "").trim(),
+            tagId: String(tag.tagId ?? "").trim()
+          }))
+          .filter((tag) => tag.tagId.length > 0 && tag.name.length > 0);
+      }
+
+      function getTagColor(color) {
+        return ["slate", "red", "amber", "green", "blue", "purple"].includes(color)
+          ? color
+          : "slate";
+      }
+
+      function createTagId() {
+        if (window.crypto?.randomUUID) {
+          return window.crypto.randomUUID();
+        }
+
+        return `tag-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      }
+
+      function getRepertoireTag(tagId) {
+        return state.repertoireTags.find((tag) => tag.tagId === tagId);
       }
 
       function getCategoryNames(categoryIds = []) {
@@ -501,8 +566,10 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
       function resetRepertoireForm() {
         state.editingRepertoireId = null;
+        state.repertoireTags = [];
         state.selectedSongs = [];
         elements.repertoireForm?.reset();
+        renderRepertoireTags();
         renderSelectedSongs();
         renderSongs();
         updateFormModes();
@@ -539,11 +606,13 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         if (!repertoire) return;
 
         state.editingRepertoireId = repertoireId;
+        state.repertoireTags = normalizeRepertoireTags(repertoire.tags ?? []);
         state.selectedSongs = normalizeRepertoireSongs(repertoire.songs ?? []);
         if (elements.repertoireName) elements.repertoireName.value = repertoire.name ?? "";
         if (elements.repertoireDescription) {
           elements.repertoireDescription.value = repertoire.description ?? "";
         }
+        renderRepertoireTags();
         renderSelectedSongs();
         renderSongs();
         updateFormModes();
@@ -559,7 +628,8 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
         state.selectedSongs.push({
           songId,
-          order: state.selectedSongs.length + 1
+          order: state.selectedSongs.length + 1,
+          tagIds: []
         });
         renderSelectedSongs();
         renderSongs();
@@ -590,6 +660,145 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           order: songIndex + 1
         }));
         renderSelectedSongs();
+      }
+
+      function addRepertoireTag() {
+        const name = elements.repertoireTagName?.value.trim() ?? "";
+        const color = getTagColor(elements.repertoireTagColor?.value ?? "slate");
+
+        if (name.length < 2) {
+          showFeedback("La etiqueta necesita al menos 2 caracteres.", "warning");
+          elements.repertoireTagName?.focus();
+          return;
+        }
+
+        const exists = state.repertoireTags.some(
+          (tag) => tag.name.toLocaleLowerCase() === name.toLocaleLowerCase()
+        );
+
+        if (exists) {
+          showFeedback("Esa etiqueta ya existe en este repertorio.", "warning");
+          elements.repertoireTagName?.focus();
+          return;
+        }
+
+        state.repertoireTags.push({
+          color,
+          name,
+          tagId: createTagId()
+        });
+
+        if (elements.repertoireTagName) elements.repertoireTagName.value = "";
+        if (elements.repertoireTagColor) elements.repertoireTagColor.value = "slate";
+        renderRepertoireTags();
+        renderSelectedSongs();
+        showFeedback("Etiqueta agregada al repertorio.", "ok");
+      }
+
+      function removeRepertoireTag(tagId) {
+        state.repertoireTags = state.repertoireTags.filter((tag) => tag.tagId !== tagId);
+        state.selectedSongs = state.selectedSongs.map((song) => ({
+          ...song,
+          tagIds: (song.tagIds ?? []).filter((id) => id !== tagId)
+        }));
+        renderRepertoireTags();
+        renderSelectedSongs();
+      }
+
+      function toggleSelectedSongTag(songId, tagId, checked) {
+        state.selectedSongs = state.selectedSongs.map((song) => {
+          if (song.songId !== songId) return song;
+
+          const tagIds = new Set(song.tagIds ?? []);
+
+          if (checked) {
+            tagIds.add(tagId);
+          } else {
+            tagIds.delete(tagId);
+          }
+
+          return {
+            ...song,
+            tagIds: [...tagIds]
+          };
+        });
+        renderSelectedSongs();
+      }
+
+      function renderRepertoireTags() {
+        if (!elements.repertoireTagList) return;
+
+        if (state.repertoireTags.length === 0) {
+          elements.repertoireTagList.innerHTML = '<p class="empty">Sin etiquetas internas.</p>';
+          return;
+        }
+
+        elements.repertoireTagList.innerHTML = state.repertoireTags
+          .map(
+            (tag) => `
+              <span class="tag-chip tag-${escapeHtml(tag.color)}">
+                ${escapeHtml(tag.name)}
+                <button type="button" data-remove-repertoire-tag="${escapeHtml(tag.tagId)}">Quitar</button>
+              </span>
+            `
+          )
+          .join("");
+      }
+
+      function renderTagChips(tagIds = []) {
+        return tagIds
+          .map((tagId) => getRepertoireTag(tagId))
+          .filter(Boolean)
+          .map(
+            (tag) =>
+              `<span class="tag-chip tag-${escapeHtml(tag.color)}">${escapeHtml(tag.name)}</span>`
+          )
+          .join("");
+      }
+
+      function renderRepertoireTagChips(tags = []) {
+        const normalizedTags = normalizeRepertoireTags(tags);
+
+        if (normalizedTags.length === 0) return "";
+
+        return `
+          <div class="song-card-tags">
+            ${normalizedTags
+              .map(
+                (tag) =>
+                  `<span class="tag-chip tag-${escapeHtml(tag.color)}">${escapeHtml(tag.name)}</span>`
+              )
+              .join("")}
+          </div>
+        `;
+      }
+
+      function renderSelectedSongTagControls(song) {
+        if (state.repertoireTags.length === 0) {
+          return '<p class="empty selected-tag-empty">Sin etiquetas internas para asignar.</p>';
+        }
+
+        const currentTagIds = new Set(song.tagIds ?? []);
+
+        return `
+          <div class="selected-tag-controls">
+            ${state.repertoireTags
+              .map(
+                (tag) => `
+                  <label class="tag-option tag-${escapeHtml(tag.color)}">
+                    <input
+                      data-song-tag-id="${escapeHtml(tag.tagId)}"
+                      data-song-tag-song-id="${escapeHtml(song.songId)}"
+                      type="checkbox"
+                      ${currentTagIds.has(tag.tagId) ? "checked" : ""}
+                    />
+                    <span>${escapeHtml(tag.name)}</span>
+                  </label>
+                `
+              )
+              .join("")}
+          </div>
+        `;
       }
 
       function renderSongCategoryFilter() {
@@ -668,7 +877,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
             const lyricsPreview = (song.lyrics ?? "").slice(0, 116);
 
             return `
-              <article class="song-row${isSelected ? " is-selected" : ""}">
+              <article class="song-row song-card${isSelected ? " is-selected" : ""}">
                 <div>
                   <h3>${escapeHtml(song.title)}</h3>
                   <p>${escapeHtml(lyricsPreview)}</p>
@@ -751,8 +960,12 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
             (song) => `
               <article class="selected-song">
                 <span>${String(song.order).padStart(2, "0")}</span>
-                <strong>${escapeHtml(getSongTitle(song.songId))}</strong>
-                <div>
+                <div class="selected-song-main">
+                  <strong>${escapeHtml(getSongTitle(song.songId))}</strong>
+                  <div class="song-card-tags">${renderTagChips(song.tagIds ?? [])}</div>
+                  ${renderSelectedSongTagControls(song)}
+                </div>
+                <div class="selected-song-actions">
                   <button type="button" data-move-song="${escapeHtml(song.songId)}" data-direction="-1">Subir</button>
                   <button type="button" data-move-song="${escapeHtml(song.songId)}" data-direction="1">Bajar</button>
                   <button type="button" data-remove-song="${escapeHtml(song.songId)}">Quitar</button>
@@ -797,7 +1010,9 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         const query = state.repertoireSearchTerm.trim().toLocaleLowerCase();
         const repertoires = query
           ? state.repertoires.filter((repertoire) =>
-              `${repertoire.name ?? ""} ${repertoire.description ?? ""}`
+              `${repertoire.name ?? ""} ${repertoire.description ?? ""} ${(repertoire.tags ?? [])
+                .map((tag) => tag.name)
+                .join(" ")}`
                 .toLocaleLowerCase()
                 .includes(query)
             )
@@ -813,15 +1028,18 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
             (repertoire) => {
               const isActive = state.editingRepertoireId === repertoire._id;
               const songCount = normalizeRepertoireSongs(repertoire.songs ?? []).length;
+              const tagCount = normalizeRepertoireTags(repertoire.tags ?? []).length;
 
               return `
-              <article class="repertoire-row${isActive ? " is-active" : ""}" ${isActive ? 'aria-current="true"' : ""}>
+              <article class="repertoire-row repertoire-card${isActive ? " is-active" : ""}" ${isActive ? 'aria-current="true"' : ""}>
                 <div>
                   <h3>${escapeHtml(repertoire.name)}</h3>
                   <p>${escapeHtml(repertoire.description || "Sin descripcion")}</p>
+                  ${renderRepertoireTagChips(repertoire.tags ?? [])}
                 </div>
                 <div class="row-actions">
                   <span>${songCount} canciones</span>
+                  <span>${tagCount} etiquetas</span>
                   <button class="${isActive ? "ghost-button" : "secondary-button"}" type="button" data-edit-repertoire="${escapeHtml(repertoire._id)}">${isActive ? "Abierto" : "Abrir"}</button>
                   ${renderDeleteControls("repertoire", repertoire._id)}
                 </div>
@@ -852,6 +1070,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           }
 
           renderCategories();
+          renderRepertoireTags();
           renderSongs();
           renderSelectedSongs();
           renderRepertoires();
@@ -904,6 +1123,16 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         }
       });
 
+      elements.repertoireTagList?.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+
+        const tagId = target.dataset.removeRepertoireTag;
+        if (tagId) {
+          removeRepertoireTag(tagId);
+        }
+      });
+
       elements.selectedSongs?.addEventListener("click", (event) => {
         const target = event.target;
         if (!(target instanceof HTMLElement)) return;
@@ -921,8 +1150,24 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         }
       });
 
+      elements.selectedSongs?.addEventListener("change", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) return;
+
+        const tagId = target.dataset.songTagId;
+        const songId = target.dataset.songTagSongId;
+
+        if (tagId && songId) {
+          toggleSelectedSongTag(songId, tagId, target.checked);
+        }
+      });
+
       elements.refreshButton?.addEventListener("click", () => {
         void loadData();
+      });
+
+      elements.addRepertoireTag?.addEventListener("click", () => {
+        addRepertoireTag();
       });
 
       elements.newRepertoireButton?.addEventListener("click", () => {
@@ -1097,6 +1342,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           const payload = {
             description: elements.repertoireDescription?.value || undefined,
             name: elements.repertoireName?.value ?? "",
+            tags: state.repertoireTags,
             songs: state.selectedSongs
           };
           const repertoire = await apiRequest(
@@ -1152,6 +1398,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
   button,
   input,
+  select,
   textarea {
     font: inherit;
   }
@@ -1402,6 +1649,87 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     grid-column: 1 / -1;
   }
 
+  .tag-builder {
+    display: grid;
+    gap: 12px;
+  }
+
+  .tag-form-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) minmax(120px, 0.65fr) auto;
+    gap: 10px;
+    align-items: end;
+  }
+
+  .tag-list,
+  .song-card-tags,
+  .selected-tag-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .tag-chip,
+  .tag-option {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid #cfd7e1;
+    border-radius: 999px;
+    padding: 5px 9px;
+    color: #253142;
+    background: #f7fafc;
+    font-size: 0.78rem;
+    font-weight: 850;
+  }
+
+  .tag-chip button {
+    min-height: 22px;
+    border: 0;
+    border-radius: 999px;
+    padding: 2px 6px;
+    color: inherit;
+    background: rgba(255, 255, 255, 0.62);
+    font-size: 0.72rem;
+    font-weight: 850;
+  }
+
+  .tag-option input {
+    width: 14px;
+    height: 14px;
+  }
+
+  .tag-slate {
+    border-color: #cfd7e1;
+    background: #f3f6fa;
+  }
+
+  .tag-red {
+    border-color: #efb5ad;
+    background: #fff1ef;
+  }
+
+  .tag-amber {
+    border-color: #e9c26f;
+    background: #fff7df;
+  }
+
+  .tag-green {
+    border-color: #a6d2bd;
+    background: #edf8f2;
+  }
+
+  .tag-blue {
+    border-color: #a7c5ec;
+    background: #edf5ff;
+  }
+
+  .tag-purple {
+    border-color: #c9b4e7;
+    background: #f6efff;
+  }
+
   .checkbox-row {
     display: flex;
     align-items: center;
@@ -1519,6 +1847,17 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     padding: 13px;
   }
 
+  .song-card,
+  .repertoire-card {
+    align-items: start;
+    background: #ffffff;
+    box-shadow: 0 1px 0 rgba(23, 32, 46, 0.04);
+  }
+
+  .song-card-tags {
+    margin-top: 10px;
+  }
+
   .repertoire-row.is-active {
     border-color: #c96757;
     background: #fff8f6;
@@ -1565,16 +1904,25 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     padding: 12px;
   }
 
-  .selected-song span {
+  .selected-song-main {
+    display: grid;
+    gap: 9px;
+  }
+
+  .selected-song > span {
     color: #b24d3d;
     font-weight: 850;
   }
 
-  .selected-song div {
+  .selected-song-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     justify-content: flex-end;
+  }
+
+  .selected-tag-empty {
+    font-size: 0.82rem;
   }
 
   .repertoire-row span,
@@ -1620,6 +1968,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     .page-header,
     .panel-heading,
     .song-tools,
+    .tag-form-row,
     .song-row,
     .repertoire-row,
     .category-row,
@@ -1632,7 +1981,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
       display: grid;
     }
 
-    .selected-song div,
+    .selected-song-actions,
     .row-actions {
       justify-content: flex-start;
     }

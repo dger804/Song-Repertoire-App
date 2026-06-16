@@ -55,11 +55,19 @@ export interface Song {
 export interface RepertoireSong {
   songId: EntityId;
   order: number;
+  tagIds: EntityId[];
+}
+
+export interface RepertoireTag {
+  tagId: EntityId;
+  name: string;
+  color: "slate" | "red" | "amber" | "green" | "blue" | "purple";
 }
 
 export interface Repertoire {
   id: EntityId;
   name: string;
   description?: string;
+  tags: RepertoireTag[];
   songs: RepertoireSong[];
 }

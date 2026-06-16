@@ -56,12 +56,22 @@ El MVP guarda la cancion como letra simple. La representacion con acordes en pos
 - `id`
 - `name`
 - `description`
+- `tags`
 - `songs`
+
+### Etiqueta En Repertorio
+
+- `tagId`
+- `name`
+- `color`
+
+Las etiquetas de repertorio son internas al repertorio. No reemplazan a las categorias globales de canciones; sirven para organizar una lista concreta.
 
 ### Cancion En Repertorio
 
 - `songId`
 - `order`
+- `tagIds`
 
 ## Reglas de implementacion futura
 

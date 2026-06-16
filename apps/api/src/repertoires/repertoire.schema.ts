@@ -5,12 +5,29 @@ import { Song } from "../songs/song.schema";
 export type RepertoireDocument = HydratedDocument<Repertoire>;
 
 @Schema({ _id: false })
+export class RepertoireTag {
+  @Prop({ maxlength: 80, required: true, trim: true })
+  tagId!: string;
+
+  @Prop({ maxlength: 40, required: true, trim: true })
+  name!: string;
+
+  @Prop({ default: "slate", maxlength: 24, trim: true })
+  color!: string;
+}
+
+export const RepertoireTagSchema = SchemaFactory.createForClass(RepertoireTag);
+
+@Schema({ _id: false })
 export class RepertoireSong {
   @Prop({ ref: Song.name, required: true, type: MongooseSchema.Types.ObjectId })
   songId!: MongooseSchema.Types.ObjectId;
 
   @Prop({ min: 1, required: true })
   order!: number;
+
+  @Prop({ default: [], type: [String] })
+  tagIds!: string[];
 }
 
 export const RepertoireSongSchema = SchemaFactory.createForClass(RepertoireSong);
@@ -22,6 +39,9 @@ export class Repertoire {
 
   @Prop({ trim: true })
   description?: string;
+
+  @Prop({ default: [], type: [RepertoireTagSchema] })
+  tags!: RepertoireTag[];
 
   @Prop({ default: [], type: [RepertoireSongSchema] })
   songs!: RepertoireSong[];

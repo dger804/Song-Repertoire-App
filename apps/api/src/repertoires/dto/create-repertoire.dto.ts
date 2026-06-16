@@ -8,6 +8,7 @@ import {
   ValidateNested
 } from "class-validator";
 import { RepertoireSongDto } from "./repertoire-song.dto";
+import { RepertoireTagDto } from "./repertoire-tag.dto";
 
 export class CreateRepertoireDto {
   @IsString()
@@ -19,6 +20,12 @@ export class CreateRepertoireDto {
   @IsString()
   @MaxLength(240)
   description?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RepertoireTagDto)
+  tags?: RepertoireTagDto[];
 
   @IsOptional()
   @IsArray()

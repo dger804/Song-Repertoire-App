@@ -23,6 +23,7 @@ El MVP inicial cubrira:
 - Repertorios.
 - Relacion canciones-repertorios.
 - Orden de canciones dentro de repertorios.
+- Etiquetas internas dentro de repertorios.
 - Roles base para usuarios futuros.
 
 Queda fuera del MVP inicial:
@@ -94,4 +95,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 18 - Biblioteca filtrable de canciones.
+Etapa actual completada: Etapa 19 - Tarjetas y etiquetas internas de repertorio.
