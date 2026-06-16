@@ -49,6 +49,8 @@ Los roles deben existir en el modelo desde el inicio, pero no deben confundirse 
 - `lyrics`
 - `categoryIds`
 
+El MVP guarda la cancion como letra simple. La representacion con acordes en posicion queda diferida a una decision posterior de renderer/repositorio especializado, para no mezclar el modelo actual con un formato que aun no esta elegido.
+
 ### Repertorio
 
 - `id`

@@ -110,12 +110,42 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           </section>
 
           <section class="panel song-picker" aria-labelledby="songs-title">
-            <div class="panel-heading">
-              <h2 id="songs-title">Canciones</h2>
+            <div class="panel-heading dashboard-heading">
+              <div>
+                <p class="panel-kicker">Biblioteca</p>
+                <h2 id="songs-title">Canciones</h2>
+              </div>
               <button id="refresh-button" class="icon-button" type="button" title="Actualizar">
                 Actualizar
               </button>
             </div>
+
+            <div class="song-tools">
+              <label class="search-field">
+                Buscar
+                <input
+                  id="song-search"
+                  autocomplete="off"
+                  placeholder="Titulo o letra"
+                  type="search"
+                />
+              </label>
+
+              <label class="filter-field">
+                Categoria
+                <select id="song-category-filter">
+                  <option value="">Todas</option>
+                  <option value="__uncategorized">Sin categoria</option>
+                </select>
+              </label>
+
+              <label class="checkbox-row filter-checkbox">
+                <input id="song-available-only" type="checkbox" />
+                Solo disponibles
+              </label>
+            </div>
+
+            <p id="song-filter-count" class="list-meta">0 canciones</p>
             <div id="song-list" class="song-list" aria-live="polite"></div>
           </section>
 
@@ -216,6 +246,9 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         editingSongId: null,
         pendingDelete: null,
         repertoireSearchTerm: "",
+        showAvailableSongsOnly: false,
+        songCategoryFilter: "",
+        songSearchTerm: "",
         songs: [],
         repertoires: [],
         selectedSongs: []
@@ -249,10 +282,14 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         repertoireSubmitButton: document.querySelector("#repertoire-submit-button"),
         selectedCount: document.querySelector("#selected-count"),
         selectedSongs: document.querySelector("#selected-songs"),
+        songAvailableOnly: document.querySelector("#song-available-only"),
+        songCategoryFilter: document.querySelector("#song-category-filter"),
         songCategoryOptions: document.querySelector("#song-category-options"),
+        songFilterCount: document.querySelector("#song-filter-count"),
         songForm: document.querySelector("#song-form"),
         songList: document.querySelector("#song-list"),
         songLyrics: document.querySelector("#song-lyrics"),
+        songSearch: document.querySelector("#song-search"),
         songSubmitButton: document.querySelector("#song-submit-button"),
         songTitle: document.querySelector("#song-title")
       };
@@ -379,6 +416,14 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           .map((category) => category.name);
       }
 
+      function getSongCategoryIds(song) {
+        return (song.categoryIds ?? []).map((id) => String(id));
+      }
+
+      function isSongSelected(songId) {
+        return state.selectedSongs.some((song) => song.songId === songId);
+      }
+
       function setSongCategorySelection(categoryIds = []) {
         const ids = new Set(categoryIds.map((id) => String(id)));
         document.querySelectorAll('input[name="song-category"]').forEach((input) => {
@@ -459,6 +504,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         state.selectedSongs = [];
         elements.repertoireForm?.reset();
         renderSelectedSongs();
+        renderSongs();
         updateFormModes();
         renderRepertoires();
       }
@@ -499,6 +545,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           elements.repertoireDescription.value = repertoire.description ?? "";
         }
         renderSelectedSongs();
+        renderSongs();
         updateFormModes();
         renderRepertoires();
         elements.repertoireName?.focus();
@@ -515,6 +562,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           order: state.selectedSongs.length + 1
         });
         renderSelectedSongs();
+        renderSongs();
       }
 
       function removeSelectedSong(songId) {
@@ -522,6 +570,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           .filter((song) => song.songId !== songId)
           .map((song, index) => ({ ...song, order: index + 1 }));
         renderSelectedSongs();
+        renderSongs();
       }
 
       function moveSelectedSong(songId, direction) {
@@ -543,28 +592,90 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         renderSelectedSongs();
       }
 
+      function renderSongCategoryFilter() {
+        if (!elements.songCategoryFilter) return;
+
+        const currentFilter = state.songCategoryFilter;
+        const filterIsValid =
+          currentFilter.length === 0 ||
+          currentFilter === "__uncategorized" ||
+          state.categories.some((category) => String(category._id) === currentFilter);
+
+        if (!filterIsValid) {
+          state.songCategoryFilter = "";
+        }
+
+        elements.songCategoryFilter.innerHTML = `
+          <option value="">Todas</option>
+          <option value="__uncategorized">Sin categoria</option>
+          ${state.categories
+            .map(
+              (category) =>
+                `<option value="${escapeHtml(category._id)}">${escapeHtml(category.name)}</option>`
+            )
+            .join("")}
+        `;
+        elements.songCategoryFilter.value = state.songCategoryFilter;
+      }
+
+      function getFilteredSongs() {
+        const query = state.songSearchTerm.trim().toLocaleLowerCase();
+
+        return state.songs.filter((song) => {
+          const categoryIds = getSongCategoryIds(song);
+          const matchesQuery =
+            query.length === 0 ||
+            `${song.title ?? ""} ${song.lyrics ?? ""}`.toLocaleLowerCase().includes(query);
+          const matchesCategory =
+            state.songCategoryFilter.length === 0 ||
+            (state.songCategoryFilter === "__uncategorized" && categoryIds.length === 0) ||
+            categoryIds.includes(state.songCategoryFilter);
+          const matchesAvailability =
+            !state.showAvailableSongsOnly || !isSongSelected(String(song._id));
+
+          return matchesQuery && matchesCategory && matchesAvailability;
+        });
+      }
+
       function renderSongs() {
         if (!elements.songList) return;
+
+        if (elements.songFilterCount) {
+          elements.songFilterCount.textContent = `${state.songs.length} canciones`;
+        }
 
         if (state.songs.length === 0) {
           elements.songList.innerHTML = '<p class="empty">Sin canciones todavia.</p>';
           return;
         }
 
-        elements.songList.innerHTML = state.songs
+        const filteredSongs = getFilteredSongs();
+
+        if (elements.songFilterCount) {
+          elements.songFilterCount.textContent = `${filteredSongs.length} de ${state.songs.length} canciones`;
+        }
+
+        if (filteredSongs.length === 0) {
+          elements.songList.innerHTML = '<p class="empty">Sin canciones con ese filtro.</p>';
+          return;
+        }
+
+        elements.songList.innerHTML = filteredSongs
           .map((song) => {
             const categoryNames = getCategoryNames(song.categoryIds ?? []);
             const categoryText = categoryNames.length > 0 ? categoryNames.join(", ") : "Sin categoria";
+            const isSelected = isSongSelected(String(song._id));
+            const lyricsPreview = (song.lyrics ?? "").slice(0, 116);
 
             return `
-              <article class="song-row">
+              <article class="song-row${isSelected ? " is-selected" : ""}">
                 <div>
                   <h3>${escapeHtml(song.title)}</h3>
-                  <p>${escapeHtml((song.lyrics ?? "").slice(0, 96))}</p>
+                  <p>${escapeHtml(lyricsPreview)}</p>
                   <small>${escapeHtml(categoryText)}</small>
                 </div>
                 <div class="row-actions">
-                  <button class="secondary-button" type="button" data-add-song="${escapeHtml(song._id)}">Agregar</button>
+                  <button class="${isSelected ? "ghost-button" : "secondary-button"}" type="button" data-add-song="${escapeHtml(song._id)}" ${isSelected ? "disabled" : ""}>${isSelected ? "Agregada" : "Agregar"}</button>
                   <button class="ghost-button" type="button" data-edit-song="${escapeHtml(song._id)}">Editar</button>
                   ${renderDeleteControls("song", song._id)}
                 </div>
@@ -578,6 +689,8 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         if (elements.categoryCount) {
           elements.categoryCount.textContent = String(state.categories.length);
         }
+
+        renderSongCategoryFilter();
 
         if (elements.categoryList) {
           elements.categoryList.innerHTML =
@@ -821,6 +934,21 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
       elements.repertoireSearch?.addEventListener("input", () => {
         state.repertoireSearchTerm = elements.repertoireSearch?.value ?? "";
         renderRepertoires();
+      });
+
+      elements.songSearch?.addEventListener("input", () => {
+        state.songSearchTerm = elements.songSearch?.value ?? "";
+        renderSongs();
+      });
+
+      elements.songCategoryFilter?.addEventListener("change", () => {
+        state.songCategoryFilter = elements.songCategoryFilter?.value ?? "";
+        renderSongs();
+      });
+
+      elements.songAvailableOnly?.addEventListener("change", () => {
+        state.showAvailableSongsOnly = Boolean(elements.songAvailableOnly?.checked);
+        renderSongs();
       });
 
       elements.cancelCategoryEdit?.addEventListener("click", () => {
@@ -1235,6 +1363,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
   }
 
   input,
+  select,
   textarea {
     width: 100%;
     border: 1px solid #cfd7e1;
@@ -1250,6 +1379,27 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
   .search-field {
     margin-top: 16px;
+  }
+
+  .song-tools {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.2fr) minmax(150px, 0.8fr);
+    gap: 12px;
+    align-items: end;
+    margin-top: 16px;
+  }
+
+  .song-tools .search-field {
+    margin-top: 0;
+  }
+
+  .filter-field {
+    display: grid;
+    gap: 7px;
+  }
+
+  .filter-checkbox {
+    grid-column: 1 / -1;
   }
 
   .checkbox-row {
@@ -1274,6 +1424,11 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     border-radius: 8px;
     padding: 9px 12px;
     font-weight: 820;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.72;
   }
 
   .primary-button {
@@ -1370,6 +1525,11 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     box-shadow: inset 3px 0 0 #b24d3d;
   }
 
+  .song-row.is-selected {
+    border-color: #bac8d8;
+    background: #f7fafc;
+  }
+
   .song-row p,
   .song-row small,
   .repertoire-row p,
@@ -1384,6 +1544,13 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     display: block;
     margin-top: 7px;
     font-size: 0.8rem;
+    font-weight: 800;
+  }
+
+  .list-meta {
+    margin: 12px 0 0;
+    color: #647386;
+    font-size: 0.84rem;
     font-weight: 800;
   }
 
@@ -1452,6 +1619,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
   @media (max-width: 640px) {
     .page-header,
     .panel-heading,
+    .song-tools,
     .song-row,
     .repertoire-row,
     .category-row,

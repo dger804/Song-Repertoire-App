@@ -18,7 +18,7 @@ Construir una aplicacion moderna, segura, mantenible y portable usando:
 El MVP inicial cubrira:
 
 - CRUD de canciones.
-- Letra de canciones.
+- Letra de canciones como contenido principal del MVP.
 - Categorias.
 - Repertorios.
 - Relacion canciones-repertorios.
@@ -94,4 +94,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 17 - Dashboard de repertorios.
+Etapa actual completada: Etapa 18 - Biblioteca filtrable de canciones.
