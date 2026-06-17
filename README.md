@@ -95,4 +95,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 19 - Tarjetas y etiquetas internas de repertorio.
+Etapa actual completada: Etapa 20 - Drag and drop inicial de canciones en repertorio.

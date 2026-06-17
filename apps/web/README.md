@@ -52,6 +52,8 @@ La pantalla `/app` permite:
 - editar y eliminar canciones;
 - seleccionar canciones existentes;
 - ordenar canciones dentro de un repertorio;
+- reordenar canciones seleccionadas arrastrando el asa visual de la tarjeta;
+- mantener botones Subir/Bajar como fallback de ordenamiento;
 - crear etiquetas internas dentro del repertorio;
 - asignar etiquetas internas a canciones del repertorio;
 - crear repertorios en MongoDB Atlas mediante la API;

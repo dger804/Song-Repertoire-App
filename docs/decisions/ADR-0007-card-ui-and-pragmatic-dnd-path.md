@@ -14,20 +14,23 @@ Pragmatic Drag and Drop puede usarse con vanilla TypeScript, por lo que encaja c
 
 Primero se implementa el modelo visual de tarjetas y las etiquetas internas de repertorio.
 
-El drag and drop queda como siguiente hito dedicado, usando:
+El primer hito de drag and drop se aplica al orden de canciones seleccionadas dentro de un repertorio, usando:
 
 - `@atlaskit/pragmatic-drag-and-drop`
 - `@atlaskit/pragmatic-drag-and-drop/element/adapter`
-- utilidades de reordenamiento del paquete cuando aplique
+- `@atlaskit/pragmatic-drag-and-drop/reorder`
+
+Las canciones se arrastran desde un asa visual dentro de la tarjeta seleccionada. La tarjeta completa funciona como drop target y los botones Subir/Bajar se mantienen como fallback.
 
 ## Consecuencias
 
-- Las tarjetas actuales pueden convertirse en elementos `draggable` sin redisenar toda la vista.
+- Las canciones seleccionadas ya pueden convertirse en elementos reordenables sin redisenar toda la vista.
 - Las etiquetas internas ya existen antes de introducir agrupaciones o drop zones.
-- El hito de drag and drop podra enfocarse en interaccion, accesibilidad y persistencia de orden.
+- El orden persistido sigue guardandose en `songs.order`.
+- Queda una base concreta para arrastrar repertorios completos o agrupar canciones por etiquetas internas.
 
 ## Riesgos
 
-- Las tarjetas aun no tienen drag and drop real.
-- El hito futuro debe validar teclado, estados de arrastre y fallback para dispositivos tactiles.
-- El orden persistido debe seguir guardandose en `songs.order`.
+- El hito futuro debe validar teclado, estados de arrastre avanzados y fallback para dispositivos tactiles.
+- Drag and drop entre etiquetas internas requiere una decision de UX separada.
+- Las pruebas automatizadas del navegador integrado pueden no disparar drag nativo HTML5; se debe complementar con prueba manual o una suite e2e dedicada cuando se agregue Playwright.

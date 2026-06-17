@@ -266,9 +266,18 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     </main>
 
     <script>
+      import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
+      import {
+        draggable,
+        dropTargetForElements,
+        monitorForElements
+      } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+      import { reorder } from "@atlaskit/pragmatic-drag-and-drop/reorder";
+
       const root = document.querySelector(".layout");
       const configuredApiBaseUrl = root?.dataset.apiBaseUrl ?? "";
       const apiBaseUrl = resolveApiBaseUrl(configuredApiBaseUrl);
+      let selectedSongDndCleanup = () => {};
 
       const state = {
         categories: [],
@@ -662,6 +671,108 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         renderSelectedSongs();
       }
 
+      function reorderSelectedSongs(sourceSongId, targetSongId) {
+        const startIndex = state.selectedSongs.findIndex((song) => song.songId === sourceSongId);
+        const finishIndex = state.selectedSongs.findIndex((song) => song.songId === targetSongId);
+
+        if (startIndex < 0 || finishIndex < 0 || startIndex === finishIndex) {
+          return;
+        }
+
+        state.selectedSongs = reorder({
+          finishIndex,
+          list: state.selectedSongs,
+          startIndex
+        }).map((song, index) => ({
+          ...song,
+          order: index + 1
+        }));
+        renderSelectedSongs();
+        showFeedback("Orden del repertorio actualizado.", "ok");
+      }
+
+      function isSelectedSongDragData(data) {
+        return data?.entityType === "selected-song" && typeof data.songId === "string";
+      }
+
+      function cleanupSelectedSongDragAndDrop() {
+        selectedSongDndCleanup();
+        selectedSongDndCleanup = () => {};
+      }
+
+      function setupSelectedSongDragAndDrop() {
+        cleanupSelectedSongDragAndDrop();
+
+        if (!elements.selectedSongs || state.selectedSongs.length < 2) {
+          return;
+        }
+
+        const cards = Array.from(
+          elements.selectedSongs.querySelectorAll("[data-selected-song-id]")
+        ).filter((card) => card instanceof HTMLElement);
+
+        const cardCleanups = cards.map((card) => {
+          const songId = card.dataset.selectedSongId;
+          const dragHandle = card.querySelector("[data-drag-handle]");
+          const dragElement = dragHandle instanceof HTMLElement ? dragHandle : card;
+
+          if (!songId) return () => {};
+
+          return combine(
+            draggable({
+              element: dragElement,
+              getInitialData: () => ({
+                entityType: "selected-song",
+                songId
+              }),
+              onDragStart: () => {
+                card.classList.add("is-dragging");
+              },
+              onDrop: () => {
+                card.classList.remove("is-dragging");
+              }
+            }),
+            dropTargetForElements({
+              canDrop: ({ source }) =>
+                isSelectedSongDragData(source.data) && source.data.songId !== songId,
+              element: card,
+              getData: () => ({
+                entityType: "selected-song-target",
+                songId
+              }),
+              onDragEnter: () => {
+                card.classList.add("is-drag-over");
+              },
+              onDragLeave: () => {
+                card.classList.remove("is-drag-over");
+              },
+              onDrop: () => {
+                card.classList.remove("is-drag-over");
+              }
+            })
+          );
+        });
+
+        selectedSongDndCleanup = combine(
+          ...cardCleanups,
+          monitorForElements({
+            canMonitor: ({ source }) => isSelectedSongDragData(source.data),
+            onDrop: ({ source, location }) => {
+              const target = location.current.dropTargets.find(
+                (dropTarget) => dropTarget.data.entityType === "selected-song-target"
+              );
+
+              if (!target || !isSelectedSongDragData(source.data)) return;
+
+              const targetSongId =
+                typeof target.data.songId === "string" ? target.data.songId : "";
+
+              reorderSelectedSongs(source.data.songId, targetSongId);
+            }
+          })
+        );
+      }
+
       function addRepertoireTag() {
         const name = elements.repertoireTagName?.value.trim() ?? "";
         const color = getTagColor(elements.repertoireTagColor?.value ?? "slate");
@@ -952,13 +1063,14 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
         if (state.selectedSongs.length === 0) {
           elements.selectedSongs.innerHTML = '<p class="empty">Sin canciones seleccionadas.</p>';
+          cleanupSelectedSongDragAndDrop();
           return;
         }
 
         elements.selectedSongs.innerHTML = state.selectedSongs
           .map(
             (song) => `
-              <article class="selected-song">
+              <article class="selected-song" data-selected-song-id="${escapeHtml(song.songId)}">
                 <span>${String(song.order).padStart(2, "0")}</span>
                 <div class="selected-song-main">
                   <strong>${escapeHtml(getSongTitle(song.songId))}</strong>
@@ -966,6 +1078,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                   ${renderSelectedSongTagControls(song)}
                 </div>
                 <div class="selected-song-actions">
+                  <span class="drag-handle" data-drag-handle="${escapeHtml(song.songId)}" aria-hidden="true" title="Arrastrar para ordenar">::</span>
                   <button type="button" data-move-song="${escapeHtml(song.songId)}" data-direction="-1">Subir</button>
                   <button type="button" data-move-song="${escapeHtml(song.songId)}" data-direction="1">Bajar</button>
                   <button type="button" data-remove-song="${escapeHtml(song.songId)}">Quitar</button>
@@ -974,6 +1087,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
             `
           )
           .join("");
+        setupSelectedSongDragAndDrop();
       }
 
       function replaceById(items, nextItem) {
@@ -1904,6 +2018,15 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     padding: 12px;
   }
 
+  .selected-song.is-dragging {
+    opacity: 0.48;
+  }
+
+  .selected-song.is-drag-over {
+    border-color: #7da7d9;
+    background: #f0f6ff;
+  }
+
   .selected-song-main {
     display: grid;
     gap: 9px;
@@ -1919,6 +2042,27 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     flex-wrap: wrap;
     gap: 6px;
     justify-content: flex-end;
+  }
+
+  .drag-handle {
+    align-items: center;
+    border: 1px solid #d7d2c8;
+    border-radius: 999px;
+    color: #6c6257;
+    min-width: 38px;
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 800;
+    justify-content: center;
+    line-height: 1;
+    min-height: 34px;
+    padding: 0 12px;
+    user-select: none;
+    cursor: grab;
+  }
+
+  .drag-handle:active {
+    cursor: grabbing;
   }
 
   .selected-tag-empty {
