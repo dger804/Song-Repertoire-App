@@ -95,4 +95,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 21 - Acciones por tarjeta en repertorios.
+Etapa actual completada: Etapa 22 - Autor y notas en canciones.

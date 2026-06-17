@@ -157,7 +157,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                 <input
                   id="song-search"
                   autocomplete="off"
-                  placeholder="Titulo o letra"
+                  placeholder="Titulo, autor, letra o notas"
                   type="search"
                 />
               </label>
@@ -195,6 +195,16 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                 />
               </label>
               <label>
+                Autor
+                <input
+                  id="song-author"
+                  maxlength="140"
+                  name="author"
+                  placeholder="Autor o compositor"
+                  type="text"
+                />
+              </label>
+              <label>
                 Letra
                 <textarea
                   id="song-lyrics"
@@ -202,6 +212,15 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                   name="lyrics"
                   required
                   rows="7"></textarea>
+              </label>
+              <label>
+                Notas
+                <textarea
+                  id="song-notes"
+                  maxlength="2000"
+                  name="notes"
+                  placeholder="Tono sugerido, contexto, indicaciones..."
+                  rows="3"></textarea>
               </label>
               <fieldset class="category-picker">
                 <legend>Categorias</legend>
@@ -328,6 +347,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         repertoireSubmitButton: document.querySelector("#repertoire-submit-button"),
         selectedCount: document.querySelector("#selected-count"),
         selectedSongs: document.querySelector("#selected-songs"),
+        songAuthor: document.querySelector("#song-author"),
         songAvailableOnly: document.querySelector("#song-available-only"),
         songCategoryFilter: document.querySelector("#song-category-filter"),
         songCategoryOptions: document.querySelector("#song-category-options"),
@@ -335,6 +355,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         songForm: document.querySelector("#song-form"),
         songList: document.querySelector("#song-list"),
         songLyrics: document.querySelector("#song-lyrics"),
+        songNotes: document.querySelector("#song-notes"),
         songPicker: document.querySelector(".song-picker"),
         songSearch: document.querySelector("#song-search"),
         songSubmitButton: document.querySelector("#song-submit-button"),
@@ -606,7 +627,9 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
         state.editingSongId = songId;
         if (elements.songTitle) elements.songTitle.value = song.title ?? "";
+        if (elements.songAuthor) elements.songAuthor.value = song.author ?? "";
         if (elements.songLyrics) elements.songLyrics.value = song.lyrics ?? "";
+        if (elements.songNotes) elements.songNotes.value = song.notes ?? "";
         setSongCategorySelection(song.categoryIds ?? []);
         updateFormModes();
         elements.songTitle?.focus();
@@ -966,7 +989,9 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           const categoryIds = getSongCategoryIds(song);
           const matchesQuery =
             query.length === 0 ||
-            `${song.title ?? ""} ${song.lyrics ?? ""}`.toLocaleLowerCase().includes(query);
+            `${song.title ?? ""} ${song.author ?? ""} ${song.lyrics ?? ""} ${song.notes ?? ""}`
+              .toLocaleLowerCase()
+              .includes(query);
           const matchesCategory =
             state.songCategoryFilter.length === 0 ||
             (state.songCategoryFilter === "__uncategorized" && categoryIds.length === 0) ||
@@ -1007,12 +1032,16 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
             const categoryText = categoryNames.length > 0 ? categoryNames.join(", ") : "Sin categoria";
             const isSelected = isSongSelected(String(song._id));
             const lyricsPreview = (song.lyrics ?? "").slice(0, 116);
+            const notesPreview = (song.notes ?? "").slice(0, 116);
+            const authorText = song.author ? `Autor: ${song.author}` : "Autor no registrado";
 
             return `
               <article class="song-row song-card${isSelected ? " is-selected" : ""}">
                 <div>
                   <h3>${escapeHtml(song.title)}</h3>
+                  <small class="song-author">${escapeHtml(authorText)}</small>
                   <p>${escapeHtml(lyricsPreview)}</p>
+                  ${notesPreview ? `<p class="song-notes-preview">${escapeHtml(notesPreview)}</p>` : ""}
                   <small>${escapeHtml(categoryText)}</small>
                 </div>
                 <div class="row-actions">
@@ -1455,8 +1484,10 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
           const payload = {
             categoryIds,
+            author: elements.songAuthor?.value ?? "",
             title: elements.songTitle?.value ?? "",
-            lyrics: elements.songLyrics?.value ?? ""
+            lyrics: elements.songLyrics?.value ?? "",
+            notes: elements.songNotes?.value ?? ""
           };
           const song = await apiRequest(
             state.editingSongId ? `/songs/${state.editingSongId}` : "/songs",
@@ -2071,6 +2102,16 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     margin-top: 7px;
     font-size: 0.8rem;
     font-weight: 800;
+  }
+
+  .song-author {
+    color: #425268;
+  }
+
+  .song-notes-preview {
+    margin-top: 8px;
+    color: #516174;
+    font-size: 0.86rem;
   }
 
   .list-meta {

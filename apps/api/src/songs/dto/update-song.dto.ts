@@ -17,8 +17,18 @@ export class UpdateSongDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(140)
+  author?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(20000)
   lyrics?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  notes?: string;
 
   @IsOptional()
   @IsArray()

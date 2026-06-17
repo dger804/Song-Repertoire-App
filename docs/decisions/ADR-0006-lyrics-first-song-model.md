@@ -12,18 +12,22 @@ Agregar campos o sintaxis de acordes demasiado pronto puede producir migraciones
 
 ## Decision
 
-Durante el MVP, `Song` mantiene solo:
+Durante el MVP, `Song` mantiene:
 
 - `title`
+- `author`
 - `lyrics`
+- `notes`
 - `categoryIds`
 
-`lyrics` es texto plano de letra. No se agregan campos de acordes, transposicion, tono, bloques musicales ni metadata de presentacion hasta elegir una estrategia dedicada.
+`lyrics` es texto plano de letra. `author` y `notes` son metadata editorial simple: sirven para identificar autoria y registrar observaciones libres, pero no representan acordes, tono, transposicion ni estructura musical.
+
+No se agregan campos de acordes, transposicion, tono, bloques musicales ni metadata de presentacion hasta elegir una estrategia dedicada.
 
 ## Consecuencias
 
-- La UI de creacion/edicion de canciones trabaja solo con titulo, letra y categorias.
-- La busqueda puede usar titulo y letra sin interpretar acordes.
+- La UI de creacion/edicion de canciones trabaja con titulo, autor, letra, notas y categorias.
+- La busqueda puede usar titulo, autor, letra y notas sin interpretar acordes.
 - El futuro renderer de acordes debera partir de una decision explicita de formato.
 - La migracion futura podra ser deliberada en vez de accidental.
 

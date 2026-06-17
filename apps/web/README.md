@@ -46,10 +46,10 @@ La pantalla `/app` permite:
 - crear categorias;
 - editar y eliminar categorias;
 - listar canciones desde la API;
-- buscar canciones por titulo o letra;
+- buscar canciones por titulo, autor, letra o notas;
 - filtrar canciones por categoria;
 - ocultar canciones ya agregadas al repertorio abierto;
-- crear canciones con categorias asociadas;
+- crear canciones con autor, letra, notas y categorias asociadas;
 - editar y eliminar canciones;
 - seleccionar canciones existentes;
 - ordenar canciones dentro de un repertorio;

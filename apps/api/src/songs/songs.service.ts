@@ -11,7 +11,9 @@ import { Song, type SongDocument } from "./song.schema";
 
 interface SongPersistencePayload {
   title?: string;
+  author?: string;
   lyrics?: string;
+  notes?: string;
   categoryIds?: Types.ObjectId[];
 }
 
@@ -80,8 +82,16 @@ export class SongsService {
       payload.title = dto.title;
     }
 
+    if (dto.author !== undefined) {
+      payload.author = dto.author;
+    }
+
     if (dto.lyrics !== undefined) {
       payload.lyrics = dto.lyrics;
+    }
+
+    if (dto.notes !== undefined) {
+      payload.notes = dto.notes;
     }
 
     if (dto.categoryIds !== undefined) {

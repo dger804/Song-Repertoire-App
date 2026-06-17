@@ -48,7 +48,9 @@ export interface Category {
 export interface Song {
   id: EntityId;
   title: string;
+  author?: string;
   lyrics: string;
+  notes?: string;
   categoryIds: EntityId[];
 }
 

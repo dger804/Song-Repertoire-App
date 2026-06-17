@@ -9,8 +9,14 @@ export class Song {
   @Prop({ required: true, trim: true })
   title!: string;
 
+  @Prop({ default: "", trim: true })
+  author!: string;
+
   @Prop({ default: "", required: true })
   lyrics!: string;
+
+  @Prop({ default: "", trim: true })
+  notes!: string;
 
   @Prop({
     default: [],
@@ -23,4 +29,5 @@ export class Song {
 export const SongSchema = SchemaFactory.createForClass(Song);
 
 SongSchema.index({ title: 1 });
+SongSchema.index({ author: 1 });
 SongSchema.index({ categoryIds: 1 });
