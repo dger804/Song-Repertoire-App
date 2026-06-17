@@ -299,6 +299,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         addCreatedSong: document.querySelector("#add-created-song"),
         addRepertoireTag: document.querySelector("#add-repertoire-tag"),
         addCreatedSongRow: document.querySelector("#add-created-song-row"),
+        builderPanel: document.querySelector(".builder"),
         builderTitle: document.querySelector("#builder-title"),
         cancelCategoryEdit: document.querySelector("#cancel-category-edit"),
         cancelRepertoireEdit: document.querySelector("#cancel-repertoire-edit"),
@@ -334,6 +335,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         songForm: document.querySelector("#song-form"),
         songList: document.querySelector("#song-list"),
         songLyrics: document.querySelector("#song-lyrics"),
+        songPicker: document.querySelector(".song-picker"),
         songSearch: document.querySelector("#song-search"),
         songSubmitButton: document.querySelector("#song-submit-button"),
         songTitle: document.querySelector("#song-title")
@@ -610,9 +612,9 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         elements.songTitle?.focus();
       }
 
-      function startEditRepertoire(repertoireId) {
+      function loadRepertoireIntoBuilder(repertoireId) {
         const repertoire = state.repertoires.find((item) => item._id === repertoireId);
-        if (!repertoire) return;
+        if (!repertoire) return null;
 
         state.editingRepertoireId = repertoireId;
         state.repertoireTags = normalizeRepertoireTags(repertoire.tags ?? []);
@@ -626,7 +628,26 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         renderSongs();
         updateFormModes();
         renderRepertoires();
+
+        return repertoire;
+      }
+
+      function startEditRepertoire(repertoireId) {
+        const repertoire = loadRepertoireIntoBuilder(repertoireId);
+        if (!repertoire) return;
+
+        elements.builderPanel?.scrollIntoView({ block: "start", behavior: "smooth" });
         elements.repertoireName?.focus();
+        showFeedback(`Editando repertorio: ${repertoire.name}.`, "ok");
+      }
+
+      function startAddSongsToRepertoire(repertoireId) {
+        const repertoire = loadRepertoireIntoBuilder(repertoireId);
+        if (!repertoire) return;
+
+        elements.songPicker?.scrollIntoView({ block: "start", behavior: "smooth" });
+        elements.songSearch?.focus();
+        showFeedback(`Agrega canciones al repertorio: ${repertoire.name}.`, "ok");
       }
 
       function addSongToRepertoire(songId) {
@@ -1144,17 +1165,25 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
               const songCount = normalizeRepertoireSongs(repertoire.songs ?? []).length;
               const tagCount = normalizeRepertoireTags(repertoire.tags ?? []).length;
 
+              const activeText = isActive ? '<span class="active-pill">Abierto</span>' : "";
+
               return `
               <article class="repertoire-row repertoire-card${isActive ? " is-active" : ""}" ${isActive ? 'aria-current="true"' : ""}>
                 <div>
-                  <h3>${escapeHtml(repertoire.name)}</h3>
+                  <div class="repertoire-card-title">
+                    <h3>${escapeHtml(repertoire.name)}</h3>
+                    ${activeText}
+                  </div>
                   <p>${escapeHtml(repertoire.description || "Sin descripcion")}</p>
                   ${renderRepertoireTagChips(repertoire.tags ?? [])}
+                  <div class="repertoire-card-meta" aria-label="Resumen de ${escapeHtml(repertoire.name)}">
+                    <span>${songCount} canciones</span>
+                    <span>${tagCount} etiquetas</span>
+                  </div>
                 </div>
                 <div class="row-actions">
-                  <span>${songCount} canciones</span>
-                  <span>${tagCount} etiquetas</span>
-                  <button class="${isActive ? "ghost-button" : "secondary-button"}" type="button" data-edit-repertoire="${escapeHtml(repertoire._id)}">${isActive ? "Abierto" : "Abrir"}</button>
+                  <button class="secondary-button" type="button" data-add-repertoire-songs="${escapeHtml(repertoire._id)}">Agregar canciones</button>
+                  <button class="ghost-button" type="button" data-edit-repertoire="${escapeHtml(repertoire._id)}">Editar</button>
                   ${renderDeleteControls("repertoire", repertoire._id)}
                 </div>
               </article>
@@ -1230,6 +1259,12 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         if (!(target instanceof HTMLElement)) return;
 
         if (handleDeleteIntent(target, "repertoire")) return;
+
+        const addRepertoireSongsId = target.dataset.addRepertoireSongs;
+        if (addRepertoireSongsId) {
+          startAddSongsToRepertoire(addRepertoireSongsId);
+          return;
+        }
 
         const editRepertoireId = target.dataset.editRepertoire;
         if (editRepertoireId) {
@@ -1976,6 +2011,44 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     border-color: #c96757;
     background: #fff8f6;
     box-shadow: inset 3px 0 0 #b24d3d;
+  }
+
+  .repertoire-card-title {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .repertoire-card-title h3 {
+    margin-bottom: 0;
+  }
+
+  .active-pill,
+  .repertoire-card-meta span {
+    min-height: 26px;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #d9e0e8;
+    border-radius: 999px;
+    padding: 4px 9px;
+    color: #516174;
+    background: #fbfcfe;
+    font-size: 0.76rem;
+    font-weight: 850;
+  }
+
+  .active-pill {
+    border-color: #ddb8af;
+    color: #9d3e30;
+    background: #fff1ee;
+  }
+
+  .repertoire-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
   }
 
   .song-row.is-selected {
