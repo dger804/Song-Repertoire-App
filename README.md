@@ -95,4 +95,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 22 - Autor y notas en canciones.
+Etapa actual completada: Etapa 23 - Vista de repertorio con letras.

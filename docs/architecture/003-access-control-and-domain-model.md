@@ -69,6 +69,8 @@ El MVP guarda la cancion como letra simple con metadata editorial basica: autor 
 
 Las etiquetas de repertorio son internas al repertorio. No reemplazan a las categorias globales de canciones; sirven para organizar una lista concreta.
 
+La vista de repertorio del MVP es una lectura operativa del repertorio guardado: muestra canciones en orden, letra completa, autor, notas y etiquetas internas asignadas. No es todavia un modo de presentacion ni define el futuro formato de acordes.
+
 ### Cancion En Repertorio
 
 - `songId`
