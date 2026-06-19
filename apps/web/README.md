@@ -39,6 +39,7 @@ La pantalla `/app` permite:
 - ver un dashboard con listado y conteos de repertorios/canciones;
 - ver repertorios y canciones en formato de tarjetas;
 - abrir una vista de repertorio con canciones ordenadas, letras, autor, notas y etiquetas internas;
+- copiar o descargar un repertorio abierto como texto plano;
 - agregar canciones, editar o eliminar repertorios desde cada tarjeta;
 - buscar repertorios por nombre o descripcion;
 - iniciar un nuevo repertorio desde el dashboard;

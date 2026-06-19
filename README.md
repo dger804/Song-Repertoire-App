@@ -95,4 +95,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 23 - Vista de repertorio con letras.
+Etapa actual completada: Etapa 24 - Exportacion de repertorio en texto.

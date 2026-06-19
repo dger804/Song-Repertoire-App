@@ -74,9 +74,17 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                 <p class="panel-kicker">Vista</p>
                 <h2 id="repertoire-viewer-title">Vista de repertorio</h2>
               </div>
-              <button id="close-repertoire-view" class="ghost-button is-hidden" type="button">
-                Cerrar vista
-              </button>
+              <div class="viewer-actions">
+                <button id="copy-repertoire-text" class="ghost-button is-hidden" type="button">
+                  Copiar texto
+                </button>
+                <button id="download-repertoire-text" class="secondary-button is-hidden" type="button">
+                  Descargar TXT
+                </button>
+                <button id="close-repertoire-view" class="ghost-button is-hidden" type="button">
+                  Cerrar vista
+                </button>
+              </div>
             </div>
 
             <div id="repertoire-viewer" class="repertoire-viewer" aria-live="polite">
@@ -348,7 +356,9 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         categorySubmitButton: document.querySelector("#category-submit-button"),
         closeRepertoireView: document.querySelector("#close-repertoire-view"),
         connectionStatus: document.querySelector("#connection-status"),
+        copyRepertoireText: document.querySelector("#copy-repertoire-text"),
         dashboardSongCount: document.querySelector("#dashboard-song-count"),
+        downloadRepertoireText: document.querySelector("#download-repertoire-text"),
         feedback: document.querySelector("#feedback"),
         newRepertoireButton: document.querySelector("#new-repertoire-button"),
         quickSongTitle: document.querySelector("#quick-song-title"),
@@ -485,6 +495,12 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
       function getSongById(songId) {
         return state.songs.find((song) => String(song._id) === String(songId)) ?? null;
+      }
+
+      function getViewingRepertoire() {
+        return (
+          state.repertoires.find((item) => item._id === state.viewingRepertoireId) ?? null
+        );
       }
 
       function getRepertoireSongId(song) {
@@ -714,6 +730,157 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         renderRepertoireViewer();
         renderRepertoires();
         showFeedback("Vista de repertorio cerrada.", "ok");
+      }
+
+      function getSafeFileName(value) {
+        const slug = String(value || "repertorio")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/gi, "-")
+          .replace(/^-+|-+$/g, "")
+          .toLocaleLowerCase();
+
+        return slug || "repertorio";
+      }
+
+      function getRepertoireSongTagNames(repertoireSong, repertoire) {
+        const tagMap = new Map(
+          normalizeRepertoireTags(repertoire.tags ?? []).map((tag) => [
+            String(tag.tagId),
+            tag.name
+          ])
+        );
+
+        return (repertoireSong.tagIds ?? [])
+          .map((tagId) => tagMap.get(String(tagId)))
+          .filter(Boolean);
+      }
+
+      function buildRepertoireText(repertoire) {
+        const lines = [
+          String(repertoire.name ?? "Repertorio"),
+          String(repertoire.description || "Sin descripcion")
+        ];
+        const tags = normalizeRepertoireTags(repertoire.tags ?? []);
+        const repertoireSongs = normalizeRepertoireSongs(repertoire.songs ?? []);
+
+        if (tags.length > 0) {
+          lines.push(`Etiquetas: ${tags.map((tag) => tag.name).join(", ")}`);
+        }
+
+        lines.push("");
+
+        if (repertoireSongs.length === 0) {
+          lines.push("Sin canciones.");
+          return `${lines.join("\n").trimEnd()}\n`;
+        }
+
+        repertoireSongs.forEach((repertoireSong, index) => {
+          const song = getSongById(repertoireSong.songId);
+          const songTagNames = getRepertoireSongTagNames(repertoireSong, repertoire);
+
+          lines.push(
+            `${String(repertoireSong.order).padStart(2, "0")}. ${
+              song?.title ?? "Cancion no encontrada"
+            }`
+          );
+
+          if (song?.author) {
+            lines.push(`Autor: ${song.author}`);
+          }
+
+          if (songTagNames.length > 0) {
+            lines.push(`Etiquetas: ${songTagNames.join(", ")}`);
+          }
+
+          lines.push("");
+
+          if (!song) {
+            lines.push("Esta cancion ya no esta en la biblioteca.");
+          } else {
+            lines.push(song.lyrics || "Sin letra registrada.");
+
+            if (song.notes) {
+              lines.push("");
+              lines.push(`Notas: ${song.notes}`);
+            }
+          }
+
+          if (index < repertoireSongs.length - 1) {
+            lines.push("");
+            lines.push("---");
+            lines.push("");
+          }
+        });
+
+        return `${lines.join("\n").trimEnd()}\n`;
+      }
+
+      async function copyTextToClipboard(text) {
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+            return;
+          }
+        } catch {
+          // Some local-network browsers reject Clipboard API on insecure origins.
+        }
+
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "true");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        textarea.style.top = "0";
+        textarea.style.opacity = "0";
+        document.body.append(textarea);
+        textarea.focus();
+        textarea.select();
+        textarea.setSelectionRange(0, textarea.value.length);
+        const copied = document.execCommand("copy");
+        textarea.remove();
+
+        if (!copied) {
+          throw new Error("Clipboard unavailable.");
+        }
+      }
+
+      async function copyViewingRepertoireText() {
+        const repertoire = getViewingRepertoire();
+
+        if (!repertoire) {
+          showFeedback("Abre un repertorio antes de copiar.", "warning");
+          return;
+        }
+
+        try {
+          await copyTextToClipboard(buildRepertoireText(repertoire));
+          showFeedback("Repertorio copiado como texto.", "ok");
+        } catch {
+          showFeedback("No se pudo copiar el repertorio en este navegador.", "error");
+        }
+      }
+
+      function downloadViewingRepertoireText() {
+        const repertoire = getViewingRepertoire();
+
+        if (!repertoire) {
+          showFeedback("Abre un repertorio antes de descargar.", "warning");
+          return;
+        }
+
+        const blob = new Blob([buildRepertoireText(repertoire)], {
+          type: "text/plain;charset=utf-8"
+        });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `${getSafeFileName(repertoire.name)}.txt`;
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+        showFeedback("Descarga de repertorio preparada.", "ok");
       }
 
       function addSongToRepertoire(songId) {
@@ -1223,11 +1390,13 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
       function renderRepertoireViewer() {
         if (!elements.repertoireViewer) return;
 
-        const repertoire = state.repertoires.find(
-          (item) => item._id === state.viewingRepertoireId
-        );
+        const repertoire = getViewingRepertoire();
 
-        elements.closeRepertoireView?.classList.toggle("is-hidden", !repertoire);
+        [
+          elements.closeRepertoireView,
+          elements.copyRepertoireText,
+          elements.downloadRepertoireText
+        ].forEach((button) => button?.classList.toggle("is-hidden", !repertoire));
 
         if (!repertoire) {
           if (state.viewingRepertoireId) {
@@ -1507,6 +1676,14 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
       elements.closeRepertoireView?.addEventListener("click", () => {
         closeRepertoireView();
+      });
+
+      elements.copyRepertoireText?.addEventListener("click", () => {
+        void copyViewingRepertoireText();
+      });
+
+      elements.downloadRepertoireText?.addEventListener("click", () => {
+        downloadViewingRepertoireText();
       });
 
       elements.addRepertoireTag?.addEventListener("click", () => {
@@ -2137,7 +2314,8 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
   }
 
   .form-actions,
-  .row-actions {
+  .row-actions,
+  .viewer-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -2147,7 +2325,8 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     align-items: center;
   }
 
-  .row-actions {
+  .row-actions,
+  .viewer-actions {
     align-items: center;
     justify-content: flex-end;
   }
@@ -2537,6 +2716,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
     .selected-song-actions,
     .repertoire-view-summary,
+    .viewer-actions,
     .row-actions {
       justify-content: flex-start;
     }

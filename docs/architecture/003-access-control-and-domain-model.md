@@ -71,6 +71,8 @@ Las etiquetas de repertorio son internas al repertorio. No reemplazan a las cate
 
 La vista de repertorio del MVP es una lectura operativa del repertorio guardado: muestra canciones en orden, letra completa, autor, notas y etiquetas internas asignadas. No es todavia un modo de presentacion ni define el futuro formato de acordes.
 
+La exportacion inicial de repertorio es texto plano generado en el frontend desde los datos ya cargados. Sirve para ensayo, revision o compartir rapidamente, sin adelantar la decision de PDF ni modo presentacion.
+
 ### Cancion En Repertorio
 
 - `songId`
