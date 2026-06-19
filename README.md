@@ -95,4 +95,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 28 - Exportacion de cancion en texto.
+Etapa actual completada: Etapa 29 - Ordenamiento accesible de canciones en repertorio.

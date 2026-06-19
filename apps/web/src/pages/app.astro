@@ -151,7 +151,16 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                 <div id="repertoire-tags" class="tag-list" aria-live="polite"></div>
               </fieldset>
 
-              <div class="selected-list" id="selected-songs" aria-live="polite"></div>
+              <p id="selected-songs-help" class="sr-only">
+                Arrastra desde el asa de cada cancion para cambiar el orden, o usa los botones
+                Subir y Bajar.
+              </p>
+              <div
+                id="selected-songs"
+                class="selected-list"
+                role="list"
+                aria-describedby="selected-songs-help"
+                aria-live="polite"></div>
 
               <div class="form-actions">
                 <button id="repertoire-submit-button" class="primary-button" type="submit">
@@ -1056,6 +1065,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           order: songIndex + 1
         }));
         renderSelectedSongs();
+        showFeedback("Orden del repertorio actualizado.", "ok");
       }
 
       function reorderSelectedSongs(sourceSongId, targetSongId) {
@@ -1083,6 +1093,12 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
       }
 
       function cleanupSelectedSongDragAndDrop() {
+        elements.selectedSongs?.classList.remove("is-dnd-ready", "is-reordering");
+        elements.selectedSongs
+          ?.querySelectorAll(".is-dragging, .is-drag-over")
+          .forEach((card) => {
+            card.classList.remove("is-dragging", "is-drag-over");
+          });
         selectedSongDndCleanup();
         selectedSongDndCleanup = () => {};
       }
@@ -1094,6 +1110,8 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           return;
         }
 
+        elements.selectedSongs.classList.add("is-dnd-ready");
+
         const cards = Array.from(
           elements.selectedSongs.querySelectorAll("[data-selected-song-id]")
         ).filter((card) => card instanceof HTMLElement);
@@ -1101,22 +1119,25 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         const cardCleanups = cards.map((card) => {
           const songId = card.dataset.selectedSongId;
           const dragHandle = card.querySelector("[data-drag-handle]");
-          const dragElement = dragHandle instanceof HTMLElement ? dragHandle : card;
+          const dragHandleElement = dragHandle instanceof HTMLElement ? dragHandle : null;
 
           if (!songId) return () => {};
 
           return combine(
             draggable({
-              element: dragElement,
+              element: card,
+              dragHandle: dragHandleElement ?? undefined,
               getInitialData: () => ({
                 entityType: "selected-song",
                 songId
               }),
               onDragStart: () => {
                 card.classList.add("is-dragging");
+                elements.selectedSongs?.classList.add("is-reordering");
               },
               onDrop: () => {
                 card.classList.remove("is-dragging");
+                elements.selectedSongs?.classList.remove("is-reordering");
               }
             }),
             dropTargetForElements({
@@ -1145,6 +1166,8 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           monitorForElements({
             canMonitor: ({ source }) => isSelectedSongDragData(source.data),
             onDrop: ({ source, location }) => {
+              elements.selectedSongs?.classList.remove("is-reordering");
+
               const target = location.current.dropTargets.find(
                 (dropTarget) => dropTarget.data.entityType === "selected-song-target"
               );
@@ -1525,24 +1548,37 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         }
 
         elements.selectedSongs.innerHTML = state.selectedSongs
-          .map(
-            (song) => `
-              <article class="selected-song" data-selected-song-id="${escapeHtml(song.songId)}">
-                <span>${String(song.order).padStart(2, "0")}</span>
+          .map((song, index) => {
+            const songTitle = getSongTitle(song.songId);
+            const canReorder = state.selectedSongs.length > 1;
+            const canMoveUp = index > 0;
+            const canMoveDown = index < state.selectedSongs.length - 1;
+
+            return `
+              <article
+                class="selected-song"
+                role="listitem"
+                aria-label="Cancion ${index + 1} de ${state.selectedSongs.length}: ${escapeHtml(songTitle)}"
+                data-selected-song-id="${escapeHtml(song.songId)}">
+                <span class="selected-song-order" aria-hidden="true">${String(song.order).padStart(2, "0")}</span>
                 <div class="selected-song-main">
-                  <strong>${escapeHtml(getSongTitle(song.songId))}</strong>
+                  <strong>${escapeHtml(songTitle)}</strong>
                   <div class="song-card-tags">${renderTagChips(song.tagIds ?? [])}</div>
                   ${renderSelectedSongTagControls(song)}
                 </div>
                 <div class="selected-song-actions">
-                  <span class="drag-handle" data-drag-handle="${escapeHtml(song.songId)}" aria-hidden="true" title="Arrastrar para ordenar">::</span>
-                  <button type="button" data-move-song="${escapeHtml(song.songId)}" data-direction="-1">Subir</button>
-                  <button type="button" data-move-song="${escapeHtml(song.songId)}" data-direction="1">Bajar</button>
+                  ${
+                    canReorder
+                      ? `<button class="drag-handle" type="button" data-drag-handle="${escapeHtml(song.songId)}" aria-label="Arrastrar ${escapeHtml(songTitle)} para ordenar" title="Arrastrar para ordenar">::</button>`
+                      : ""
+                  }
+                  <button type="button" data-move-song="${escapeHtml(song.songId)}" data-direction="-1" ${canMoveUp ? "" : "disabled"}>Subir</button>
+                  <button type="button" data-move-song="${escapeHtml(song.songId)}" data-direction="1" ${canMoveDown ? "" : "disabled"}>Bajar</button>
                   <button type="button" data-remove-song="${escapeHtml(song.songId)}">Quitar</button>
                 </div>
               </article>
-            `
-          )
+            `;
+          })
           .join("");
         setupSelectedSongDragAndDrop();
       }
@@ -2548,6 +2584,18 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     display: none !important;
   }
 
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    padding: 0;
+    margin: -1px;
+  }
+
   .song-list,
   .category-list,
   .selected-list,
@@ -2898,7 +2946,18 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     align-items: center;
     border: 1px solid #e3e8ef;
     border-radius: 8px;
+    background: #ffffff;
     padding: 12px;
+    transition:
+      background 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      opacity 160ms ease;
+  }
+
+  .selected-song:focus-within {
+    border-color: #7da7d9;
+    box-shadow: 0 0 0 3px rgba(125, 167, 217, 0.22);
   }
 
   .selected-song.is-dragging {
@@ -2910,12 +2969,21 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     background: #f0f6ff;
   }
 
+  .selected-list.is-reordering .selected-song:not(.is-dragging) {
+    box-shadow: inset 0 0 0 1px rgba(125, 167, 217, 0.28);
+  }
+
   .selected-song-main {
     display: grid;
     gap: 9px;
+    min-width: 0;
   }
 
-  .selected-song > span {
+  .selected-song-main strong {
+    overflow-wrap: anywhere;
+  }
+
+  .selected-song-order {
     color: #b24d3d;
     font-weight: 850;
   }
@@ -2923,6 +2991,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
   .selected-song-actions {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 6px;
     justify-content: flex-end;
   }
@@ -2930,18 +2999,26 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
   .drag-handle {
     align-items: center;
     border: 1px solid #d7d2c8;
-    border-radius: 999px;
-    color: #6c6257;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #2f3b4d;
+    width: 38px;
     min-width: 38px;
     display: inline-flex;
     font-size: 0.78rem;
     font-weight: 800;
     justify-content: center;
     line-height: 1;
-    min-height: 34px;
-    padding: 0 12px;
+    min-height: 38px;
+    padding: 0;
+    touch-action: none;
     user-select: none;
     cursor: grab;
+  }
+
+  .drag-handle:hover {
+    border-color: #9fb2c7;
+    background: #eef4fb;
   }
 
   .drag-handle:active {
