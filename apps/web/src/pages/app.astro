@@ -553,6 +553,17 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           .map((category) => category.name);
       }
 
+      function renderCategoryChips(categoryNames = []) {
+        const names = categoryNames.length > 0 ? categoryNames : ["Sin categoria"];
+
+        return names
+          .map(
+            (name) =>
+              `<span class="category-chip">${escapeHtml(name)}</span>`
+          )
+          .join("");
+      }
+
       function getSongCategoryIds(song) {
         return (song.categoryIds ?? []).map((id) => String(id));
       }
@@ -1254,20 +1265,19 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         elements.songList.innerHTML = filteredSongs
           .map((song) => {
             const categoryNames = getCategoryNames(song.categoryIds ?? []);
-            const categoryText = categoryNames.length > 0 ? categoryNames.join(", ") : "Sin categoria";
             const isSelected = isSongSelected(String(song._id));
-            const lyricsPreview = (song.lyrics ?? "").slice(0, 116);
-            const notesPreview = (song.notes ?? "").slice(0, 116);
-            const authorText = song.author ? `Autor: ${song.author}` : "Autor no registrado";
+            const authorText = song.author ? `Autor: ${song.author}` : "";
 
             return `
               <article class="song-row song-card${isSelected ? " is-selected" : ""}">
-                <div>
-                  <h3>${escapeHtml(song.title)}</h3>
-                  <small class="song-author">${escapeHtml(authorText)}</small>
-                  <p>${escapeHtml(lyricsPreview)}</p>
-                  ${notesPreview ? `<p class="song-notes-preview">${escapeHtml(notesPreview)}</p>` : ""}
-                  <small>${escapeHtml(categoryText)}</small>
+                <div class="song-card-main">
+                  <div class="song-title-stack">
+                    <h3>${escapeHtml(song.title)}</h3>
+                    ${authorText ? `<small class="song-author">${escapeHtml(authorText)}</small>` : ""}
+                  </div>
+                  <div class="song-category-chips" aria-label="Categorias de ${escapeHtml(song.title)}">
+                    ${renderCategoryChips(categoryNames)}
+                  </div>
                 </div>
                 <div class="row-actions">
                   <button class="${isSelected ? "ghost-button" : "secondary-button"}" type="button" data-add-song="${escapeHtml(song._id)}" ${isSelected ? "disabled" : ""}>${isSelected ? "Agregada" : "Agregar"}</button>
@@ -2350,6 +2360,10 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     margin-top: 16px;
   }
 
+  .song-list {
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  }
+
   .category-options {
     display: flex;
     flex-wrap: wrap;
@@ -2391,6 +2405,52 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     align-items: start;
     background: #ffffff;
     box-shadow: 0 1px 0 rgba(23, 32, 46, 0.04);
+  }
+
+  .song-card {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    min-height: 148px;
+  }
+
+  .song-card .row-actions {
+    justify-content: flex-start;
+  }
+
+  .song-card-main {
+    display: grid;
+    gap: 11px;
+    min-width: 0;
+  }
+
+  .song-title-stack {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  .song-title-stack h3 {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .song-category-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .category-chip {
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #cdd8e4;
+    border-radius: 999px;
+    padding: 4px 9px;
+    color: #314158;
+    background: #f4f8fb;
+    font-size: 0.76rem;
+    font-weight: 850;
   }
 
   .song-card-tags {
@@ -2565,7 +2625,6 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     background: #f7fafc;
   }
 
-  .song-row p,
   .song-row small,
   .repertoire-row p,
   .category-row p,
@@ -2576,20 +2635,12 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
   }
 
   .song-row small {
-    display: block;
-    margin-top: 7px;
     font-size: 0.8rem;
     font-weight: 800;
   }
 
   .song-author {
     color: #425268;
-  }
-
-  .song-notes-preview {
-    margin-top: 8px;
-    color: #516174;
-    font-size: 0.86rem;
   }
 
   .list-meta {

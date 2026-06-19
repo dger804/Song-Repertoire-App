@@ -95,4 +95,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 25 - Limpieza de referencias al eliminar.
+Etapa actual completada: Etapa 26 - Biblioteca de canciones compacta.
