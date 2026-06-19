@@ -95,4 +95,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 26 - Biblioteca de canciones compacta.
+Etapa actual completada: Etapa 27 - Detalle de cancion desde biblioteca.

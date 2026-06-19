@@ -204,6 +204,22 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
             <div id="song-list" class="song-list" aria-live="polite"></div>
           </section>
 
+          <section class="panel song-detail-panel" aria-labelledby="song-detail-title">
+            <div class="panel-heading dashboard-heading">
+              <div>
+                <p class="panel-kicker">Lectura</p>
+                <h2 id="song-detail-title">Detalle de cancion</h2>
+              </div>
+              <button id="close-song-detail" class="ghost-button is-hidden" type="button">
+                Cerrar detalle
+              </button>
+            </div>
+
+            <div id="song-detail" class="song-detail" aria-live="polite">
+              <p class="empty">Selecciona Ver en una cancion para revisar su letra.</p>
+            </div>
+          </section>
+
           <section class="panel quick-song" aria-labelledby="quick-song-title">
             <h2 id="quick-song-title">Crear cancion</h2>
             <form id="song-form" class="form-grid">
@@ -336,7 +352,8 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         songs: [],
         repertoires: [],
         selectedSongs: [],
-        viewingRepertoireId: null
+        viewingRepertoireId: null,
+        viewingSongId: null
       };
 
       const elements = {
@@ -355,6 +372,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         categoryName: document.querySelector("#category-name"),
         categorySubmitButton: document.querySelector("#category-submit-button"),
         closeRepertoireView: document.querySelector("#close-repertoire-view"),
+        closeSongDetail: document.querySelector("#close-song-detail"),
         connectionStatus: document.querySelector("#connection-status"),
         copyRepertoireText: document.querySelector("#copy-repertoire-text"),
         dashboardSongCount: document.querySelector("#dashboard-song-count"),
@@ -381,6 +399,8 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         songAvailableOnly: document.querySelector("#song-available-only"),
         songCategoryFilter: document.querySelector("#song-category-filter"),
         songCategoryOptions: document.querySelector("#song-category-options"),
+        songDetail: document.querySelector("#song-detail"),
+        songDetailPanel: document.querySelector(".song-detail-panel"),
         songFilterCount: document.querySelector("#song-filter-count"),
         songForm: document.querySelector("#song-form"),
         songList: document.querySelector("#song-list"),
@@ -503,6 +523,10 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         );
       }
 
+      function getViewingSong() {
+        return state.songs.find((song) => song._id === state.viewingSongId) ?? null;
+      }
+
       function getRepertoireSongId(song) {
         return String(song?.songId?._id ?? song?.songId ?? "");
       }
@@ -599,6 +623,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         renderSongs();
         renderRepertoires();
         renderRepertoireViewer();
+        renderSongDetail();
       }
 
       function setPendingDelete(type, id) {
@@ -736,11 +761,29 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         showFeedback(`Vista de repertorio: ${repertoire.name}.`, "ok");
       }
 
+      function startViewSong(songId) {
+        const song = getSongById(songId);
+        if (!song) return;
+
+        state.viewingSongId = songId;
+        renderSongs();
+        renderSongDetail();
+        elements.songDetailPanel?.scrollIntoView({ block: "start", behavior: "smooth" });
+        showFeedback(`Detalle de cancion: ${song.title}.`, "ok");
+      }
+
       function closeRepertoireView() {
         state.viewingRepertoireId = null;
         renderRepertoireViewer();
         renderRepertoires();
         showFeedback("Vista de repertorio cerrada.", "ok");
+      }
+
+      function closeSongDetail() {
+        state.viewingSongId = null;
+        renderSongDetail();
+        renderSongs();
+        showFeedback("Detalle de cancion cerrado.", "ok");
       }
 
       function getSafeFileName(value) {
@@ -1239,6 +1282,46 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         });
       }
 
+      function renderSongDetail() {
+        if (!elements.songDetail) return;
+
+        const song = getViewingSong();
+        elements.closeSongDetail?.classList.toggle("is-hidden", !song);
+
+        if (!song) {
+          if (state.viewingSongId) {
+            state.viewingSongId = null;
+          }
+
+          elements.songDetail.innerHTML =
+            '<p class="empty">Selecciona Ver en una cancion para revisar su letra.</p>';
+          return;
+        }
+
+        const categoryNames = getCategoryNames(song.categoryIds ?? []);
+        const authorText = song.author ? `Autor: ${song.author}` : "Autor no registrado";
+
+        elements.songDetail.innerHTML = `
+          <article class="song-detail-card">
+            <header class="song-detail-header">
+              <div>
+                <h3>${escapeHtml(song.title)}</h3>
+                <small>${escapeHtml(authorText)}</small>
+              </div>
+              <div class="song-category-chips" aria-label="Categorias de ${escapeHtml(song.title)}">
+                ${renderCategoryChips(categoryNames)}
+              </div>
+            </header>
+            <pre class="lyrics-block">${escapeHtml(song.lyrics || "Sin letra registrada.")}</pre>
+            ${
+              song.notes
+                ? `<aside class="song-notes-block"><strong>Notas</strong><p>${escapeHtml(song.notes)}</p></aside>`
+                : ""
+            }
+          </article>
+        `;
+      }
+
       function renderSongs() {
         if (!elements.songList) return;
 
@@ -1266,13 +1349,18 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           .map((song) => {
             const categoryNames = getCategoryNames(song.categoryIds ?? []);
             const isSelected = isSongSelected(String(song._id));
+            const isViewing = state.viewingSongId === song._id;
             const authorText = song.author ? `Autor: ${song.author}` : "";
+            const activeText = isViewing ? '<span class="active-pill">En detalle</span>' : "";
 
             return `
-              <article class="song-row song-card${isSelected ? " is-selected" : ""}">
+              <article class="song-row song-card${isSelected ? " is-selected" : ""}${isViewing ? " is-active" : ""}" ${isViewing ? 'aria-current="true"' : ""}>
                 <div class="song-card-main">
                   <div class="song-title-stack">
-                    <h3>${escapeHtml(song.title)}</h3>
+                    <div class="song-card-title">
+                      <h3>${escapeHtml(song.title)}</h3>
+                      ${activeText}
+                    </div>
                     ${authorText ? `<small class="song-author">${escapeHtml(authorText)}</small>` : ""}
                   </div>
                   <div class="song-category-chips" aria-label="Categorias de ${escapeHtml(song.title)}">
@@ -1280,6 +1368,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                   </div>
                 </div>
                 <div class="row-actions">
+                  <button class="ghost-button" type="button" data-view-song="${escapeHtml(song._id)}">Ver</button>
                   <button class="${isSelected ? "ghost-button" : "secondary-button"}" type="button" data-add-song="${escapeHtml(song._id)}" ${isSelected ? "disabled" : ""}>${isSelected ? "Agregada" : "Agregar"}</button>
                   <button class="ghost-button" type="button" data-edit-song="${escapeHtml(song._id)}">Editar</button>
                   ${renderDeleteControls("song", song._id)}
@@ -1580,6 +1669,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           renderSelectedSongs();
           renderRepertoires();
           renderRepertoireViewer();
+          renderSongDetail();
         } catch (error) {
           if (elements.connectionStatus) {
             elements.connectionStatus.textContent = "API no disponible";
@@ -1594,6 +1684,12 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         if (!(target instanceof HTMLElement)) return;
 
         if (handleDeleteIntent(target, "song")) return;
+
+        const viewSongId = target.dataset.viewSong;
+        if (viewSongId) {
+          startViewSong(viewSongId);
+          return;
+        }
 
         const editSongId = target.dataset.editSong;
         if (editSongId) {
@@ -1688,6 +1784,10 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         closeRepertoireView();
       });
 
+      elements.closeSongDetail?.addEventListener("click", () => {
+        closeSongDetail();
+      });
+
       elements.copyRepertoireText?.addEventListener("click", () => {
         void copyViewingRepertoireText();
       });
@@ -1753,6 +1853,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           if (state.editingCategoryId === categoryId) resetCategoryForm();
           renderCategories();
           renderSongs();
+          renderSongDetail();
           showFeedback("Categoria eliminada.", "ok");
         } catch (error) {
           showFeedback(error instanceof Error ? error.message : "No se pudo eliminar la categoria.", "error");
@@ -1777,10 +1878,12 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
               .map((item, index) => ({ ...item, order: index + 1 }))
           }));
           if (state.editingSongId === songId) resetSongForm();
+          if (state.viewingSongId === songId) state.viewingSongId = null;
           renderSongs();
           renderSelectedSongs();
           renderRepertoires();
           renderRepertoireViewer();
+          renderSongDetail();
           showFeedback("Cancion eliminada.", "ok");
         } catch (error) {
           showFeedback(error instanceof Error ? error.message : "No se pudo eliminar la cancion.", "error");
@@ -1829,6 +1932,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           resetCategoryForm();
           renderCategories();
           renderSongs();
+          renderSongDetail();
           showFeedback(wasEditing ? "Categoria actualizada." : "Categoria guardada.", "ok");
         } catch (error) {
           showFeedback(error instanceof Error ? error.message : "No se pudo guardar la categoria.", "error");
@@ -1864,6 +1968,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           renderSongs();
           renderRepertoires();
           renderRepertoireViewer();
+          renderSongDetail();
 
           if (!wasEditing && elements.addCreatedSong?.checked) {
             addSongToRepertoire(song._id);
@@ -2091,6 +2196,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
   }
 
   .song-picker,
+  .song-detail-panel,
   .quick-song,
   .category-panel {
     grid-column: 2;
@@ -2429,6 +2535,13 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     min-width: 0;
   }
 
+  .song-card-title {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
   .song-title-stack h3 {
     margin: 0;
     overflow-wrap: anywhere;
@@ -2625,6 +2738,42 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     background: #f7fafc;
   }
 
+  .song-row.is-active {
+    border-color: #c96757;
+    background: #fff8f6;
+    box-shadow: inset 3px 0 0 #b24d3d;
+  }
+
+  .song-detail {
+    display: grid;
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  .song-detail-card {
+    display: grid;
+    gap: 12px;
+  }
+
+  .song-detail-header {
+    display: grid;
+    gap: 10px;
+    border-bottom: 1px solid #e3e8ef;
+    padding-bottom: 12px;
+  }
+
+  .song-detail-header h3 {
+    margin: 0 0 6px;
+    color: #17202e;
+    font-size: 1.05rem;
+  }
+
+  .song-detail-header small {
+    color: #425268;
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+
   .song-row small,
   .repertoire-row p,
   .category-row p,
@@ -2733,6 +2882,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     .repertoire-list-panel,
     .repertoire-viewer-panel,
     .song-picker,
+    .song-detail-panel,
     .quick-song,
     .category-panel {
       grid-column: auto;
