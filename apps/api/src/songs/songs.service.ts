@@ -5,6 +5,10 @@ import {
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
+import {
+  Repertoire,
+  type RepertoireDocument
+} from "../repertoires/repertoire.schema";
 import { CreateSongDto } from "./dto/create-song.dto";
 import { UpdateSongDto } from "./dto/update-song.dto";
 import { Song, type SongDocument } from "./song.schema";
@@ -21,7 +25,9 @@ interface SongPersistencePayload {
 export class SongsService {
   constructor(
     @InjectModel(Song.name)
-    private readonly songModel: Model<SongDocument>
+    private readonly songModel: Model<SongDocument>,
+    @InjectModel(Repertoire.name)
+    private readonly repertoireModel: Model<RepertoireDocument>
   ) {}
 
   findAll() {
@@ -63,14 +69,24 @@ export class SongsService {
   }
 
   async remove(id: string) {
+    const songId = this.parseObjectId(id);
     const song = await this.songModel
-      .findByIdAndDelete(this.parseObjectId(id))
+      .findByIdAndDelete(songId)
       .lean()
       .exec();
 
     if (!song) {
       throw new NotFoundException("Song not found.");
     }
+
+    const repertoireFilter = {
+      "songs.songId": songId
+    } as unknown as Parameters<typeof this.repertoireModel.updateMany>[0];
+    const repertoireUpdate = {
+      $pull: { songs: { songId } }
+    } as Parameters<typeof this.repertoireModel.updateMany>[1];
+
+    await this.repertoireModel.updateMany(repertoireFilter, repertoireUpdate).exec();
 
     return { deleted: true, id };
   }

@@ -40,6 +40,11 @@ La aplicacion NestJS ya esta inicializada con un endpoint `GET /health`.
 
 Los endpoints de categorias, canciones y repertorios ya usan DTOs y validacion global. La autorizacion en backend se implementara en una etapa posterior.
 
+Los borrados mantienen integridad basica entre colecciones:
+
+- `DELETE /categories/:id` elimina esa categoria de `categoryIds` en canciones.
+- `DELETE /songs/:id` elimina esa cancion de los repertorios que la referencian.
+
 ## Endpoints actuales
 
 ```text

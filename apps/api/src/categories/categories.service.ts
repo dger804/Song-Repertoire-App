@@ -8,12 +8,15 @@ import { Model, Types } from "mongoose";
 import { Category, type CategoryDocument } from "./category.schema";
 import { CreateCategoryDto } from "./dto/create-category.dto";
 import { UpdateCategoryDto } from "./dto/update-category.dto";
+import { Song, type SongDocument } from "../songs/song.schema";
 
 @Injectable()
 export class CategoriesService {
   constructor(
     @InjectModel(Category.name)
-    private readonly categoryModel: Model<CategoryDocument>
+    private readonly categoryModel: Model<CategoryDocument>,
+    @InjectModel(Song.name)
+    private readonly songModel: Model<SongDocument>
   ) {}
 
   findAll() {
@@ -56,14 +59,24 @@ export class CategoriesService {
   }
 
   async remove(id: string) {
+    const categoryId = this.parseObjectId(id);
     const category = await this.categoryModel
-      .findByIdAndDelete(this.parseObjectId(id))
+      .findByIdAndDelete(categoryId)
       .lean()
       .exec();
 
     if (!category) {
       throw new NotFoundException("Category not found.");
     }
+
+    const songFilter = {
+      categoryIds: categoryId
+    } as unknown as Parameters<typeof this.songModel.updateMany>[0];
+    const songUpdate = {
+      $pull: { categoryIds: categoryId }
+    } as Parameters<typeof this.songModel.updateMany>[1];
+
+    await this.songModel.updateMany(songFilter, songUpdate).exec();
 
     return { deleted: true, id };
   }

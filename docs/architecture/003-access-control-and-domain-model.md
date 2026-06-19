@@ -99,3 +99,5 @@ La API define schemas Mongoose para estas colecciones:
 | `repertoires` | `Repertoire` | `name`, `songs.songId` |
 
 `categories`, `songs` y `repertoires` ya exponen CRUD con DTOs y validacion global. Las reglas de autorizacion ejecutables siguen pendientes.
+
+Los borrados aplican limpieza referencial basica: eliminar una categoria la retira de las canciones, y eliminar una cancion la retira de los repertorios. Esta regla evita referencias huerfanas sin introducir todavia transacciones ni versionado de cambios.

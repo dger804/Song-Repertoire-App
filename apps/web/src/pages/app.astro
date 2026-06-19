@@ -1760,6 +1760,12 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           state.selectedSongs = state.selectedSongs
             .filter((item) => item.songId !== songId)
             .map((item, index) => ({ ...item, order: index + 1 }));
+          state.repertoires = state.repertoires.map((repertoire) => ({
+            ...repertoire,
+            songs: normalizeRepertoireSongs(repertoire.songs ?? [])
+              .filter((item) => item.songId !== songId)
+              .map((item, index) => ({ ...item, order: index + 1 }))
+          }));
           if (state.editingSongId === songId) resetSongForm();
           renderSongs();
           renderSelectedSongs();
