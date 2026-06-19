@@ -95,4 +95,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 27 - Detalle de cancion desde biblioteca.
+Etapa actual completada: Etapa 28 - Exportacion de cancion en texto.

@@ -210,9 +210,17 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                 <p class="panel-kicker">Lectura</p>
                 <h2 id="song-detail-title">Detalle de cancion</h2>
               </div>
-              <button id="close-song-detail" class="ghost-button is-hidden" type="button">
-                Cerrar detalle
-              </button>
+              <div class="viewer-actions">
+                <button id="copy-song-text" class="ghost-button is-hidden" type="button">
+                  Copiar texto
+                </button>
+                <button id="download-song-text" class="secondary-button is-hidden" type="button">
+                  Descargar TXT
+                </button>
+                <button id="close-song-detail" class="ghost-button is-hidden" type="button">
+                  Cerrar detalle
+                </button>
+              </div>
             </div>
 
             <div id="song-detail" class="song-detail" aria-live="polite">
@@ -375,8 +383,10 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         closeSongDetail: document.querySelector("#close-song-detail"),
         connectionStatus: document.querySelector("#connection-status"),
         copyRepertoireText: document.querySelector("#copy-repertoire-text"),
+        copySongText: document.querySelector("#copy-song-text"),
         dashboardSongCount: document.querySelector("#dashboard-song-count"),
         downloadRepertoireText: document.querySelector("#download-repertoire-text"),
+        downloadSongText: document.querySelector("#download-song-text"),
         feedback: document.querySelector("#feedback"),
         newRepertoireButton: document.querySelector("#new-repertoire-button"),
         quickSongTitle: document.querySelector("#quick-song-title"),
@@ -870,16 +880,29 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         return `${lines.join("\n").trimEnd()}\n`;
       }
 
-      async function copyTextToClipboard(text) {
-        try {
-          if (navigator.clipboard?.writeText) {
-            await navigator.clipboard.writeText(text);
-            return;
-          }
-        } catch {
-          // Some local-network browsers reject Clipboard API on insecure origins.
+      function buildSongText(song) {
+        const categoryNames = getCategoryNames(song.categoryIds ?? []);
+        const lines = [String(song.title ?? "Cancion")];
+
+        if (song.author) {
+          lines.push(`Autor: ${song.author}`);
         }
 
+        lines.push(
+          `Categorias: ${categoryNames.length > 0 ? categoryNames.join(", ") : "Sin categoria"}`
+        );
+        lines.push("");
+        lines.push(song.lyrics || "Sin letra registrada.");
+
+        if (song.notes) {
+          lines.push("");
+          lines.push(`Notas: ${song.notes}`);
+        }
+
+        return `${lines.join("\n").trimEnd()}\n`;
+      }
+
+      function copyTextWithSelection(text) {
         const textarea = document.createElement("textarea");
         textarea.value = text;
         textarea.setAttribute("readonly", "true");
@@ -893,10 +916,28 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         textarea.setSelectionRange(0, textarea.value.length);
         const copied = document.execCommand("copy");
         textarea.remove();
+        return copied;
+      }
 
-        if (!copied) {
-          throw new Error("Clipboard unavailable.");
+      async function copyTextToClipboard(text) {
+        try {
+          if (document.queryCommandSupported?.("copy") !== false && copyTextWithSelection(text)) {
+            return;
+          }
+        } catch {
+          // Continue with Clipboard API when selection copy is unavailable.
         }
+
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+            return;
+          }
+        } catch {
+          // Some local-network browsers reject Clipboard API on insecure origins.
+        }
+
+        throw new Error("Clipboard unavailable.");
       }
 
       async function copyViewingRepertoireText() {
@@ -913,6 +954,44 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         } catch {
           showFeedback("No se pudo copiar el repertorio en este navegador.", "error");
         }
+      }
+
+      async function copyViewingSongText() {
+        const song = getViewingSong();
+
+        if (!song) {
+          showFeedback("Abre una cancion antes de copiar.", "warning");
+          return;
+        }
+
+        try {
+          await copyTextToClipboard(buildSongText(song));
+          showFeedback("Cancion copiada como texto.", "ok");
+        } catch {
+          showFeedback("No se pudo copiar la cancion en este navegador.", "error");
+        }
+      }
+
+      function downloadViewingSongText() {
+        const song = getViewingSong();
+
+        if (!song) {
+          showFeedback("Abre una cancion antes de descargar.", "warning");
+          return;
+        }
+
+        const blob = new Blob([buildSongText(song)], {
+          type: "text/plain;charset=utf-8"
+        });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `${getSafeFileName(song.title)}.txt`;
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+        showFeedback("Descarga de cancion preparada.", "ok");
       }
 
       function downloadViewingRepertoireText() {
@@ -1286,7 +1365,11 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         if (!elements.songDetail) return;
 
         const song = getViewingSong();
-        elements.closeSongDetail?.classList.toggle("is-hidden", !song);
+        [
+          elements.closeSongDetail,
+          elements.copySongText,
+          elements.downloadSongText
+        ].forEach((button) => button?.classList.toggle("is-hidden", !song));
 
         if (!song) {
           if (state.viewingSongId) {
@@ -1786,6 +1869,14 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
       elements.closeSongDetail?.addEventListener("click", () => {
         closeSongDetail();
+      });
+
+      elements.copySongText?.addEventListener("click", () => {
+        void copyViewingSongText();
+      });
+
+      elements.downloadSongText?.addEventListener("click", () => {
+        downloadViewingSongText();
       });
 
       elements.copyRepertoireText?.addEventListener("click", () => {
