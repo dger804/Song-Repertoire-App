@@ -363,6 +363,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         pendingDelete: null,
         repertoireTags: [],
         repertoireSearchTerm: "",
+        repertoireViewTagFilter: "",
         showAvailableSongsOnly: false,
         songCategoryFilter: "",
         songSearchTerm: "",
@@ -773,6 +774,9 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         const repertoire = state.repertoires.find((item) => item._id === repertoireId);
         if (!repertoire) return;
 
+        if (state.viewingRepertoireId !== repertoireId) {
+          state.repertoireViewTagFilter = "";
+        }
         state.viewingRepertoireId = repertoireId;
         renderRepertoires();
         renderRepertoireViewer();
@@ -793,6 +797,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
       function closeRepertoireView() {
         state.viewingRepertoireId = null;
+        state.repertoireViewTagFilter = "";
         renderRepertoireViewer();
         renderRepertoires();
         showFeedback("Vista de repertorio cerrada.", "ok");
@@ -803,6 +808,24 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         renderSongDetail();
         renderSongs();
         showFeedback("Detalle de cancion cerrado.", "ok");
+      }
+
+      function setRepertoireViewTagFilter(filter) {
+        const repertoire = getViewingRepertoire();
+
+        if (!repertoire) {
+          return;
+        }
+
+        state.repertoireViewTagFilter = filter;
+        renderRepertoireViewer();
+
+        const label =
+          filter === "__untagged"
+            ? "Sin etiqueta"
+            : normalizeRepertoireTags(repertoire.tags ?? []).find((tag) => tag.tagId === filter)
+                ?.name ?? "Todas";
+        showFeedback(`Filtro de repertorio: ${label}.`, "ok");
       }
 
       function getSafeFileName(value) {
@@ -827,6 +850,78 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         return (repertoireSong.tagIds ?? [])
           .map((tagId) => tagMap.get(String(tagId)))
           .filter(Boolean);
+      }
+
+      function getRepertoireViewFilter(repertoire, repertoireSongs) {
+        const filter = state.repertoireViewTagFilter;
+
+        if (!filter) {
+          return "";
+        }
+
+        if (filter === "__untagged") {
+          return repertoireSongs.some((song) => (song.tagIds ?? []).length === 0)
+            ? filter
+            : "";
+        }
+
+        const hasTag = normalizeRepertoireTags(repertoire.tags ?? []).some(
+          (tag) => tag.tagId === filter
+        );
+        return hasTag ? filter : "";
+      }
+
+      function filterRepertoireSongsByTag(repertoireSongs, filter) {
+        if (!filter) {
+          return repertoireSongs;
+        }
+
+        if (filter === "__untagged") {
+          return repertoireSongs.filter((song) => (song.tagIds ?? []).length === 0);
+        }
+
+        return repertoireSongs.filter((song) => (song.tagIds ?? []).includes(filter));
+      }
+
+      function renderRepertoireTagFilters(tags, repertoireSongs, activeFilter) {
+        const normalizedTags = normalizeRepertoireTags(tags);
+        const untaggedCount = repertoireSongs.filter(
+          (song) => (song.tagIds ?? []).length === 0
+        ).length;
+
+        if (normalizedTags.length === 0 && untaggedCount === 0) {
+          return "";
+        }
+
+        const renderFilterButton = (value, label, count) => `
+          <button
+            class="tag-filter${activeFilter === value ? " is-active" : ""}"
+            type="button"
+            data-repertoire-tag-filter="${escapeHtml(value)}"
+            aria-pressed="${activeFilter === value ? "true" : "false"}">
+            ${escapeHtml(label)}
+            <span>${count}</span>
+          </button>
+        `;
+
+        const tagButtons = normalizedTags
+          .map(
+            (tag) =>
+              renderFilterButton(
+                tag.tagId,
+                tag.name,
+                repertoireSongs.filter((song) => (song.tagIds ?? []).includes(tag.tagId)).length
+              )
+          )
+          .join("");
+
+        return `
+          <div class="repertoire-tag-filter" aria-label="Filtrar canciones por etiqueta interna">
+            ${renderFilterButton("", "Todas", repertoireSongs.length)}
+            ${tagButtons}
+            ${untaggedCount > 0 ? renderFilterButton("__untagged", "Sin etiqueta", untaggedCount) : ""}
+          </div>
+        `;
       }
 
       function buildRepertoireText(repertoire) {
@@ -1627,8 +1722,18 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         }
 
         const repertoireSongs = normalizeRepertoireSongs(repertoire.songs ?? []);
+        const activeTagFilter = getRepertoireViewFilter(repertoire, repertoireSongs);
+        state.repertoireViewTagFilter = activeTagFilter;
+        const filteredRepertoireSongs = filterRepertoireSongsByTag(
+          repertoireSongs,
+          activeTagFilter
+        );
         const songCountText =
           repertoireSongs.length === 1 ? "1 cancion" : `${repertoireSongs.length} canciones`;
+        const visibleSongCountText =
+          filteredRepertoireSongs.length === 1
+            ? "1 visible"
+            : `${filteredRepertoireSongs.length} visibles`;
         const tagCount = normalizeRepertoireTags(repertoire.tags ?? []).length;
         const tagCountText = tagCount === 1 ? "1 etiqueta" : `${tagCount} etiquetas`;
 
@@ -1642,13 +1747,17 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
             <div class="repertoire-view-summary" aria-label="Resumen de ${escapeHtml(repertoire.name)}">
               <span>${songCountText}</span>
               <span>${tagCountText}</span>
+              ${activeTagFilter ? `<span>${visibleSongCountText}</span>` : ""}
             </div>
           </article>
+          ${renderRepertoireTagFilters(repertoire.tags ?? [], repertoireSongs, activeTagFilter)}
           <div class="repertoire-view-song-list">
             ${
               repertoireSongs.length === 0
                 ? '<p class="empty">Este repertorio todavia no tiene canciones.</p>'
-                : repertoireSongs
+                : filteredRepertoireSongs.length === 0
+                  ? '<p class="empty">Sin canciones con esa etiqueta.</p>'
+                  : filteredRepertoireSongs
                     .map((repertoireSong) => {
                       const song = getSongById(repertoireSong.songId);
                       const tagChips = renderRepertoireSongTagChips(
@@ -1856,6 +1965,16 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         }
       });
 
+      elements.repertoireViewer?.addEventListener("click", (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+
+        const filterButton = target.closest("[data-repertoire-tag-filter]");
+        if (!(filterButton instanceof HTMLElement)) return;
+
+        setRepertoireViewTagFilter(filterButton.dataset.repertoireTagFilter ?? "");
+      });
+
       elements.repertoireTagList?.addEventListener("click", (event) => {
         const target = event.target;
         if (!(target instanceof HTMLElement)) return;
@@ -2025,7 +2144,10 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           await apiRequest(`/repertoires/${repertoireId}`, { method: "DELETE" });
           state.pendingDelete = null;
           state.repertoires = state.repertoires.filter((item) => item._id !== repertoireId);
-          if (state.viewingRepertoireId === repertoireId) state.viewingRepertoireId = null;
+          if (state.viewingRepertoireId === repertoireId) {
+            state.viewingRepertoireId = null;
+            state.repertoireViewTagFilter = "";
+          }
           if (state.editingRepertoireId === repertoireId) resetRepertoireForm();
           renderRepertoires();
           renderRepertoireViewer();
@@ -2797,6 +2919,49 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     background: #fbfcfe;
     font-size: 0.78rem;
     font-weight: 850;
+  }
+
+  .repertoire-tag-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    border-bottom: 1px solid #e3e8ef;
+    padding-bottom: 14px;
+  }
+
+  .tag-filter {
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #cfd7e1;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #2f3b4d;
+    padding: 7px 10px;
+    font-size: 0.8rem;
+    font-weight: 850;
+  }
+
+  .tag-filter span {
+    min-width: 24px;
+    border-radius: 8px;
+    background: #eef2f6;
+    color: #516174;
+    padding: 2px 6px;
+    text-align: center;
+    font-size: 0.72rem;
+  }
+
+  .tag-filter.is-active {
+    border-color: #c96757;
+    background: #fff1ee;
+    color: #8d392e;
+  }
+
+  .tag-filter.is-active span {
+    background: #ffffff;
+    color: #8d392e;
   }
 
   .repertoire-view-song-list {
