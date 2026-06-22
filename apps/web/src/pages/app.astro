@@ -338,6 +338,19 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         </div>
 
         <p id="feedback" class="feedback" role="status"></p>
+
+        <section id="manual-export" class="manual-export is-hidden" aria-labelledby="manual-export-title">
+          <div class="panel-heading dashboard-heading">
+            <div>
+              <p class="panel-kicker">Exportacion</p>
+              <h2 id="manual-export-title">Texto exportable</h2>
+            </div>
+            <button id="close-manual-export" class="ghost-button" type="button">
+              Cerrar
+            </button>
+          </div>
+          <textarea id="manual-export-text" readonly rows="9"></textarea>
+        </section>
       </section>
     </main>
 
@@ -398,6 +411,10 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         downloadRepertoireText: document.querySelector("#download-repertoire-text"),
         downloadSongText: document.querySelector("#download-song-text"),
         feedback: document.querySelector("#feedback"),
+        manualExport: document.querySelector("#manual-export"),
+        manualExportText: document.querySelector("#manual-export-text"),
+        manualExportTitle: document.querySelector("#manual-export-title"),
+        closeManualExport: document.querySelector("#close-manual-export"),
         newRepertoireButton: document.querySelector("#new-repertoire-button"),
         quickSongTitle: document.querySelector("#quick-song-title"),
         refreshButton: document.querySelector("#refresh-button"),
@@ -445,6 +462,27 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         if (!elements.feedback) return;
         elements.feedback.textContent = message;
         elements.feedback.dataset.type = type;
+      }
+
+      function hideManualExportText() {
+        elements.manualExport?.classList.add("is-hidden");
+        if (elements.manualExportText) {
+          elements.manualExportText.value = "";
+        }
+      }
+
+      function showManualExportText(title, text) {
+        if (!elements.manualExport || !elements.manualExportText) return;
+
+        if (elements.manualExportTitle) {
+          elements.manualExportTitle.textContent = title;
+        }
+
+        elements.manualExportText.value = text;
+        elements.manualExport.classList.remove("is-hidden");
+        elements.manualExport.scrollIntoView({ block: "start", behavior: "smooth" });
+        elements.manualExportText.focus();
+        elements.manualExportText.select();
       }
 
       function updateFormModes() {
@@ -798,6 +836,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
       function closeRepertoireView() {
         state.viewingRepertoireId = null;
         state.repertoireViewTagFilter = "";
+        hideManualExportText();
         renderRepertoireViewer();
         renderRepertoires();
         showFeedback("Vista de repertorio cerrada.", "ok");
@@ -805,6 +844,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
       function closeSongDetail() {
         state.viewingSongId = null;
+        hideManualExportText();
         renderSongDetail();
         renderSongs();
         showFeedback("Detalle de cancion cerrado.", "ok");
@@ -1052,11 +1092,15 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           return;
         }
 
+        const text = buildRepertoireText(repertoire);
+
         try {
-          await copyTextToClipboard(buildRepertoireText(repertoire));
+          await copyTextToClipboard(text);
+          hideManualExportText();
           showFeedback("Repertorio copiado como texto.", "ok");
         } catch {
-          showFeedback("No se pudo copiar el repertorio en este navegador.", "error");
+          showManualExportText("Texto de repertorio", text);
+          showFeedback("El texto del repertorio quedo listo para copiar manualmente.", "warning");
         }
       }
 
@@ -1068,11 +1112,15 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           return;
         }
 
+        const text = buildSongText(song);
+
         try {
-          await copyTextToClipboard(buildSongText(song));
+          await copyTextToClipboard(text);
+          hideManualExportText();
           showFeedback("Cancion copiada como texto.", "ok");
         } catch {
-          showFeedback("No se pudo copiar la cancion en este navegador.", "error");
+          showManualExportText("Texto de cancion", text);
+          showFeedback("El texto de la cancion quedo listo para copiar manualmente.", "warning");
         }
       }
 
@@ -2024,6 +2072,11 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
       elements.closeSongDetail?.addEventListener("click", () => {
         closeSongDetail();
+      });
+
+      elements.closeManualExport?.addEventListener("click", () => {
+        hideManualExportText();
+        showFeedback("Texto exportable cerrado.", "ok");
       });
 
       elements.copySongText?.addEventListener("click", () => {
@@ -3203,6 +3256,25 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
   .feedback {
     margin: 16px 0 0;
+  }
+
+  .manual-export {
+    display: grid;
+    gap: 14px;
+    margin-top: 14px;
+    border: 1px solid #d5dce5;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 18px;
+  }
+
+  .manual-export textarea {
+    min-height: 190px;
+    font-family:
+      "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 0.86rem;
+    line-height: 1.55;
+    white-space: pre;
   }
 
   @media (max-width: 1000px) {

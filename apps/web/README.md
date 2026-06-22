@@ -41,6 +41,7 @@ La pantalla `/app` permite:
 - abrir una vista de repertorio con canciones ordenadas, letras, autor, notas y etiquetas internas;
 - filtrar la vista de repertorio por etiqueta interna o canciones sin etiqueta;
 - copiar o descargar un repertorio abierto como texto plano;
+- mostrar una salida manual de texto cuando el navegador bloquea el portapapeles;
 - agregar canciones, editar o eliminar repertorios desde cada tarjeta;
 - buscar repertorios por nombre o descripcion;
 - iniciar un nuevo repertorio desde el dashboard;

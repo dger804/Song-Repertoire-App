@@ -95,4 +95,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 30 - Filtros por etiqueta en vista de repertorio.
+Etapa actual completada: Etapa 31 - Salida manual para exportacion de texto.
