@@ -24,7 +24,7 @@ El MVP inicial cubrira:
 - Relacion canciones-repertorios.
 - Orden de canciones dentro de repertorios.
 - Etiquetas internas dentro de repertorios.
-- Letra con acordes usando ChordSheetJS.
+- Letra con acordes en formato ChordPro basico con renderer propio.
 - Video de YouTube y enlace de partitura opcionales en el detalle de cancion.
 - Roles base para usuarios futuros.
 
@@ -98,4 +98,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 32 - Pagina de cancion con ChordSheetJS y multimedia opcional.
+Etapa actual completada: Etapa 33 - Renderer propio de acordes sin dependencia GPL.

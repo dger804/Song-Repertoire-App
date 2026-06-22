@@ -54,7 +54,7 @@ Los roles deben existir en el modelo desde el inicio, pero no deben confundirse 
 - `notes`
 - `categoryIds`
 
-El MVP conserva `lyrics` como letra simple de respaldo y agrega `chordSheet` para letra con acordes renderizada en frontend con ChordSheetJS. `youtubeUrl` y `sheetMusicUrl` son URLs opcionales: si existen, la pagina de cancion las muestra; si faltan, no se renderizan. El sistema definitivo de partituras sigue pendiente.
+El MVP conserva `lyrics` como letra simple de respaldo y agrega `chordSheet` para letra con acordes en formato ChordPro basico, renderizada en frontend con un renderer propio. `youtubeUrl` y `sheetMusicUrl` son URLs opcionales: si existen, la pagina de cancion las muestra; si faltan, no se renderizan. El sistema definitivo de partituras sigue pendiente.
 
 ### Repertorio
 

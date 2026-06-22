@@ -33,7 +33,7 @@ La aplicacion Astro ya tiene landing publica y una pantalla local de trabajo en 
 
 - `/`: landing promocional.
 - `/app`: dashboard local de repertorios.
-- `/song/?id=<songId>`: detalle de cancion con letra/acordes y multimedia opcional.
+- `/song/?id=<songId>`: detalle de cancion con letra/acordes en ChordPro basico y multimedia opcional.
 
 La pantalla `/app` permite:
 
@@ -52,7 +52,7 @@ La pantalla `/app` permite:
 - editar y eliminar categorias;
 - listar canciones desde la API en tarjetas compactas con titulo y categorias;
 - abrir una cancion en una pagina propia con letra/acordes, autor, notas y categorias;
-- renderizar letra con acordes mediante `chordsheetjs`;
+- renderizar letra con acordes mediante un renderer propio de ChordPro basico;
 - mostrar video de YouTube y partitura solo cuando la cancion tiene esas URLs;
 - copiar o descargar una cancion abierta como texto plano;
 - buscar canciones por titulo, autor, letra o notas;

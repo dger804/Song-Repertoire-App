@@ -1,5 +1,9 @@
 # Skill Aprendida: Pagina De Cancion Con ChordSheetJS Y Multimedia
 
+## Estado
+
+Superada por la etapa 33. Se retiro ChordSheetJS por su licencia GPL-2.0-only y se reemplazo por un renderer propio de ChordPro basico.
+
 ## Nombre de la skill
 
 Abrir canciones en una pagina propia con acordes, video y partitura opcional.

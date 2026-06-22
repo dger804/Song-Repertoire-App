@@ -2,7 +2,7 @@
 
 ## Estado
 
-Aprobado.
+Superado por ADR-0009.
 
 ## Contexto
 

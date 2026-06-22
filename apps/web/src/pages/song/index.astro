@@ -117,16 +117,9 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     </main>
 
     <script>
-      import {
-        ChordProParser,
-        ChordsOverWordsParser,
-        HtmlDivFormatter
-      } from "chordsheetjs";
-
       const root = document.querySelector(".layout");
       const configuredApiBaseUrl = root?.dataset.apiBaseUrl ?? "";
       const apiBaseUrl = resolveApiBaseUrl(configuredApiBaseUrl);
-      const chordFormatter = new HtmlDivFormatter();
       const state = {
         categories: [],
         song: null
@@ -155,7 +148,6 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         videoSection: document.querySelector("#video-section")
       };
 
-      installChordSheetStyles();
       elements.copySongText?.addEventListener("click", () => {
         void copyCurrentSongText();
       });
@@ -166,12 +158,6 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         hideManualExportText();
       });
       void loadSong();
-
-      function installChordSheetStyles() {
-        const style = document.createElement("style");
-        style.textContent = chordFormatter.cssString(".chord-sheet-output");
-        document.head.append(style);
-      }
 
       function escapeHtml(value) {
         return String(value)
@@ -457,39 +443,6 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         }
       }
 
-      function looksLikeChordPro(value) {
-        return (
-          /\[[A-H][^\]\n]{0,24}\]/i.test(value) ||
-          /^\s*\{(?:title|subtitle|artist|key|capo|tempo|comment|c|soc|eoc|start_of|end_of)[^}]*:/im.test(value)
-        );
-      }
-
-      function parseChordSheet(value) {
-        const escapedValue = escapeHtml(value);
-        const parsers = looksLikeChordPro(value)
-          ? [new ChordProParser(), new ChordsOverWordsParser()]
-          : [new ChordsOverWordsParser(), new ChordProParser()];
-        let lastError = null;
-
-        for (const parser of parsers) {
-          try {
-            return parser.parse(escapedValue);
-          } catch (error) {
-            lastError = error;
-          }
-        }
-
-        throw lastError ?? new Error("No se pudo interpretar la cancion.");
-      }
-
-      function renderPlainText(value) {
-        if (!elements.chordOutput) return;
-        const pre = document.createElement("pre");
-        pre.className = "lyrics-block";
-        pre.textContent = value;
-        elements.chordOutput.replaceChildren(pre);
-      }
-
       function renderChordSheet(value) {
         if (!elements.chordOutput || !elements.chordSection) return;
 
@@ -501,12 +454,124 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           return;
         }
 
-        try {
-          const parsedSong = parseChordSheet(trimmedValue);
-          elements.chordOutput.innerHTML = chordFormatter.format(parsedSong);
-        } catch {
-          renderPlainText(trimmedValue);
+        elements.chordOutput.replaceChildren(buildChordSheet(trimmedValue));
+      }
+
+      function buildChordSheet(value) {
+        const sheet = document.createElement("div");
+        sheet.className = "chord-sheet";
+
+        value.split(/\r?\n/).forEach((line) => {
+          sheet.append(renderChordSheetLine(line));
+        });
+
+        return sheet;
+      }
+
+      function renderChordSheetLine(line) {
+        const directive = parseChordProDirective(line);
+
+        if (directive) {
+          return renderChordProDirective(directive);
         }
+
+        if (line.trim().length === 0) {
+          const spacer = document.createElement("div");
+          spacer.className = "chord-blank-line";
+          return spacer;
+        }
+
+        const segments = parseChordProSegments(line);
+        const row = document.createElement("div");
+        row.className = segments.some((segment) => segment.chord)
+          ? "chord-line"
+          : "chord-line is-text-only";
+
+        segments.forEach((segment) => {
+          const column = document.createElement("span");
+          column.className = "chord-column";
+
+          const chord = document.createElement("span");
+          chord.className = "chord-symbol";
+          chord.textContent = segment.chord;
+
+          const lyric = document.createElement("span");
+          lyric.className = "chord-lyric";
+          lyric.textContent = segment.lyric || " ";
+
+          column.append(chord, lyric);
+          row.append(column);
+        });
+
+        return row;
+      }
+
+      function parseChordProDirective(line) {
+        const match = line.match(/^\s*\{([^}:]+)\s*:?\s*([^}]*)\}\s*$/);
+
+        if (!match) {
+          return null;
+        }
+
+        return {
+          name: match[1].trim().toLocaleLowerCase(),
+          value: match[2].trim()
+        };
+      }
+
+      function renderChordProDirective({ name, value }) {
+        const directive = document.createElement("div");
+        const labelByName = {
+          c: value,
+          comment: value,
+          key: value ? `Tono: ${value}` : "",
+          capo: value ? `Capo: ${value}` : "",
+          tempo: value ? `Tempo: ${value}` : "",
+          soc: "Coro",
+          start_of_chorus: "Coro",
+          sov: "Verso",
+          start_of_verse: "Verso"
+        };
+        const label = labelByName[name] ?? "";
+
+        directive.className = label ? "chord-comment" : "chord-directive is-hidden";
+        directive.textContent = label;
+
+        return directive;
+      }
+
+      function parseChordProSegments(line) {
+        const segments = [];
+        const chordPattern = /\[([^\]\n]{1,40})\]/g;
+        let pendingChord = "";
+        let cursor = 0;
+        let match = chordPattern.exec(line);
+
+        while (match) {
+          const lyric = line.slice(cursor, match.index);
+
+          if (lyric.length > 0 || pendingChord.length > 0) {
+            segments.push({
+              chord: pendingChord,
+              lyric
+            });
+          }
+
+          pendingChord = match[1].trim();
+          cursor = match.index + match[0].length;
+          match = chordPattern.exec(line);
+        }
+
+        const remainingLyric = line.slice(cursor);
+
+        if (remainingLyric.length > 0 || pendingChord.length > 0 || segments.length === 0) {
+          segments.push({
+            chord: pendingChord,
+            lyric: remainingLyric
+          });
+        }
+
+        return segments;
       }
 
       function renderOptionalVideo(song) {
@@ -879,27 +944,58 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     line-height: 1.55;
   }
 
-  :global(.chord-sheet-output .chord-sheet) {
+  .chord-sheet {
+    display: grid;
+    gap: 5px;
     min-width: max-content;
   }
 
-  :global(.chord-sheet-output .chord-sheet .chord) {
+  .chord-line {
+    display: flex;
+    align-items: flex-end;
+    min-height: 2.4em;
+  }
+
+  .chord-line.is-text-only {
+    min-height: 1.55em;
+  }
+
+  .chord-column {
+    display: inline-grid;
+    grid-template-rows: 1.05em auto;
+    align-items: end;
+    white-space: pre;
+  }
+
+  .chord-symbol {
+    min-height: 1.05em;
+    padding-right: 0.35ch;
     color: #9d3e30;
+    font-size: 0.84rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .chord-lyric {
+    min-height: 1.35em;
+    padding-right: 0.35ch;
+    color: #253142;
+    white-space: pre;
+  }
+
+  .chord-comment {
+    width: fit-content;
+    border-left: 3px solid #b24d3d;
+    border-radius: 8px;
+    background: #fff8f6;
+    padding: 7px 10px;
+    color: #7f392f;
+    font-size: 0.84rem;
     font-weight: 900;
   }
 
-  :global(.chord-sheet-output .chord-sheet .lyrics) {
-    color: #253142;
-  }
-
-  .lyrics-block,
-  :global(.chord-sheet-output .lyrics-block) {
-    overflow-wrap: anywhere;
-    margin: 0;
-    color: #253142;
-    font: inherit;
-    line-height: 1.55;
-    white-space: pre-wrap;
+  .chord-blank-line {
+    min-height: 0.85rem;
   }
 
   .media-frame,
