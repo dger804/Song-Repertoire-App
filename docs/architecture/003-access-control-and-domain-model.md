@@ -48,10 +48,13 @@ Los roles deben existir en el modelo desde el inicio, pero no deben confundirse 
 - `title`
 - `author`
 - `lyrics`
+- `chordSheet`
+- `youtubeUrl`
+- `sheetMusicUrl`
 - `notes`
 - `categoryIds`
 
-El MVP guarda la cancion como letra simple con metadata editorial basica: autor y notas libres. La representacion con acordes en posicion queda diferida a una decision posterior de renderer/repositorio especializado, para no mezclar el modelo actual con un formato que aun no esta elegido.
+El MVP conserva `lyrics` como letra simple de respaldo y agrega `chordSheet` para letra con acordes renderizada en frontend con ChordSheetJS. `youtubeUrl` y `sheetMusicUrl` son URLs opcionales: si existen, la pagina de cancion las muestra; si faltan, no se renderizan. El sistema definitivo de partituras sigue pendiente.
 
 ### Repertorio
 
@@ -69,7 +72,7 @@ El MVP guarda la cancion como letra simple con metadata editorial basica: autor 
 
 Las etiquetas de repertorio son internas al repertorio. No reemplazan a las categorias globales de canciones; sirven para organizar una lista concreta.
 
-La vista de repertorio del MVP es una lectura operativa del repertorio guardado: muestra canciones en orden, letra completa, autor, notas y etiquetas internas asignadas. No es todavia un modo de presentacion ni define el futuro formato de acordes.
+La vista de repertorio del MVP es una lectura operativa del repertorio guardado: muestra canciones en orden, letra completa, autor, notas y etiquetas internas asignadas. No es todavia un modo de presentacion ni define el futuro sistema de partituras.
 
 La exportacion inicial de repertorio es texto plano generado en el frontend desde los datos ya cargados. Sirve para ensayo, revision o compartir rapidamente, sin adelantar la decision de PDF ni modo presentacion.
 

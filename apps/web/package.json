@@ -11,6 +11,7 @@
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^2.0.0",
     "astro": "^6.4.5",
+    "chordsheetjs": "^15.5.1",
     "typescript": "^6.0.3"
   }
 }

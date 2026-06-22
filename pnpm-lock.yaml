@@ -62,6 +62,9 @@ importers:
       astro:
         specifier: ^6.4.5
         version: 6.4.5(@types/node@25.9.2)(rollup@4.61.1)(terser@5.48.0)
+      chordsheetjs:
+        specifier: ^15.5.1
+        version: 15.5.1
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -1172,6 +1175,15 @@ packages:
   chokidar@5.0.0:
     resolution: {integrity: sha512-TQMmc3w+5AxjpL8iIiwebF73dRDF4fBIieAqGn9RGCWaEVwQ6Fb2cGe31Yns0RRIzii5goJ1Y7xbMwo1TxMplw==}
     engines: {node: '>= 20.19.0'}
+
+  chordsheetjs@15.5.1:
+    resolution: {integrity: sha512-06ArJtz1ZTwioDKFbREbQD8VbP6vaW8Ok/zHnnDZ3LUKLTCB1bxTUPpprP03DSDgSYTmO78hLtzHWu+CbjqO3g==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      jspdf: ^4.0.0
+    peerDependenciesMeta:
+      jspdf:
+        optional: true
 
   chrome-trace-event@1.0.4:
     resolution: {integrity: sha512-rNjApaLzuwaOTjCiT8lSDdGN1APCiqkChLMJxJPWLunPAt5fy8xgU9/jNOchV84wfIxrA0lRQB7oCT8jrn/wrQ==}
@@ -3981,6 +3993,8 @@ snapshots:
   chokidar@5.0.0:
     dependencies:
       readdirp: 5.0.0
+
+  chordsheetjs@15.5.1: {}
 
   chrome-trace-event@1.0.4: {}
 

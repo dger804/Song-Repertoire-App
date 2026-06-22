@@ -1,0 +1,999 @@
+---
+const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
+---
+
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Detalle local de cancion con letra, acordes, video y partitura opcional."
+    />
+    <title>Cancion | Song Repertoire</title>
+  </head>
+  <body>
+    <main class="layout" data-api-base-url={configuredApiBaseUrl}>
+      <aside class="sidebar" aria-label="Navegacion de la aplicacion">
+        <a class="brand" href="/">Song Repertoire</a>
+        <nav>
+          <a href="/app">Repertorios</a>
+          <a aria-current="page" href="/song/">Cancion</a>
+          <a href="/app">Categorias</a>
+        </nav>
+      </aside>
+
+      <section class="content" aria-labelledby="song-title">
+        <header class="page-header">
+          <div>
+            <p class="eyebrow">Biblioteca</p>
+            <h1 id="song-title">Cargando cancion</h1>
+            <p id="song-author" class="song-author"></p>
+          </div>
+          <div class="header-actions">
+            <p id="connection-status" class="status" role="status">Conectando</p>
+            <button id="copy-song-text" class="ghost-button" type="button" disabled>
+              Copiar texto
+            </button>
+            <button id="download-song-text" class="ghost-button" type="button" disabled>
+              Descargar TXT
+            </button>
+            <a class="ghost-button" href="/app">Volver</a>
+          </div>
+        </header>
+
+        <section id="song-state" class="state-panel" role="status">
+          Cargando cancion...
+        </section>
+
+        <article id="song-view" class="song-view is-hidden">
+          <section class="song-summary" aria-label="Resumen de la cancion">
+            <div id="song-categories" class="song-category-chips"></div>
+          </section>
+
+          <div class="song-grid">
+            <section id="chord-section" class="song-panel is-hidden" aria-labelledby="chord-title">
+              <div class="panel-heading">
+                <p class="panel-kicker">Cancion</p>
+                <h2 id="chord-title">Letra y acordes</h2>
+              </div>
+              <div id="chord-sheet-output" class="chord-sheet-output"></div>
+            </section>
+
+            <section id="video-section" class="song-panel is-hidden" aria-labelledby="video-title">
+              <div class="panel-heading">
+                <p class="panel-kicker">Referencia</p>
+                <h2 id="video-title">Video</h2>
+              </div>
+              <iframe
+                id="youtube-frame"
+                class="media-frame"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+                loading="lazy"
+                referrerpolicy="strict-origin-when-cross-origin"
+                title="Video de la cancion"></iframe>
+            </section>
+
+            <section id="sheet-section" class="song-panel is-hidden" aria-labelledby="sheet-title">
+              <div class="panel-heading">
+                <p class="panel-kicker">Lectura</p>
+                <h2 id="sheet-title">Partitura</h2>
+              </div>
+              <iframe
+                id="sheet-music-frame"
+                class="sheet-frame"
+                loading="lazy"
+                referrerpolicy="strict-origin-when-cross-origin"
+                title="Partitura de la cancion"></iframe>
+              <a id="sheet-music-link" class="secondary-link" href="/app" rel="noopener" target="_blank">
+                Abrir partitura
+              </a>
+            </section>
+
+            <section id="notes-section" class="song-panel is-hidden" aria-labelledby="notes-title">
+              <div class="panel-heading">
+                <p class="panel-kicker">Apuntes</p>
+                <h2 id="notes-title">Notas</h2>
+              </div>
+              <p id="song-notes" class="notes-text"></p>
+            </section>
+          </div>
+        </article>
+
+        <section id="manual-export" class="manual-export is-hidden" aria-labelledby="manual-export-title">
+          <div class="panel-heading export-heading">
+            <div>
+              <p class="panel-kicker">Exportacion</p>
+              <h2 id="manual-export-title">Texto exportable</h2>
+            </div>
+            <button id="close-manual-export" class="ghost-button" type="button">
+              Cerrar
+            </button>
+          </div>
+          <textarea id="manual-export-text" readonly rows="9"></textarea>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      import {
+        ChordProParser,
+        ChordsOverWordsParser,
+        HtmlDivFormatter
+      } from "chordsheetjs";
+
+      const root = document.querySelector(".layout");
+      const configuredApiBaseUrl = root?.dataset.apiBaseUrl ?? "";
+      const apiBaseUrl = resolveApiBaseUrl(configuredApiBaseUrl);
+      const chordFormatter = new HtmlDivFormatter();
+      const state = {
+        categories: [],
+        song: null
+      };
+
+      const elements = {
+        chordOutput: document.querySelector("#chord-sheet-output"),
+        chordSection: document.querySelector("#chord-section"),
+        closeManualExport: document.querySelector("#close-manual-export"),
+        connectionStatus: document.querySelector("#connection-status"),
+        copySongText: document.querySelector("#copy-song-text"),
+        downloadSongText: document.querySelector("#download-song-text"),
+        manualExport: document.querySelector("#manual-export"),
+        manualExportText: document.querySelector("#manual-export-text"),
+        sheetFrame: document.querySelector("#sheet-music-frame"),
+        sheetLink: document.querySelector("#sheet-music-link"),
+        sheetSection: document.querySelector("#sheet-section"),
+        songAuthor: document.querySelector("#song-author"),
+        songCategories: document.querySelector("#song-categories"),
+        songNotes: document.querySelector("#song-notes"),
+        songState: document.querySelector("#song-state"),
+        songTitle: document.querySelector("#song-title"),
+        songView: document.querySelector("#song-view"),
+        notesSection: document.querySelector("#notes-section"),
+        videoFrame: document.querySelector("#youtube-frame"),
+        videoSection: document.querySelector("#video-section")
+      };
+
+      installChordSheetStyles();
+      elements.copySongText?.addEventListener("click", () => {
+        void copyCurrentSongText();
+      });
+      elements.downloadSongText?.addEventListener("click", () => {
+        downloadCurrentSongText();
+      });
+      elements.closeManualExport?.addEventListener("click", () => {
+        hideManualExportText();
+      });
+      void loadSong();
+
+      function installChordSheetStyles() {
+        const style = document.createElement("style");
+        style.textContent = chordFormatter.cssString(".chord-sheet-output");
+        document.head.append(style);
+      }
+
+      function escapeHtml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function isLoopbackHost(hostname) {
+        return ["localhost", "127.0.0.1", "::1", "[::1]"].includes(hostname);
+      }
+
+      function resolveApiBaseUrl(configuredUrl) {
+        const fallbackUrl = `${window.location.protocol}//${window.location.hostname}:3000`;
+        const trimmedUrl = configuredUrl.trim();
+
+        if (trimmedUrl.length === 0) {
+          return fallbackUrl;
+        }
+
+        try {
+          const url = new URL(trimmedUrl);
+
+          if (isLoopbackHost(url.hostname) && !isLoopbackHost(window.location.hostname)) {
+            url.hostname = window.location.hostname;
+          }
+
+          return url.origin;
+        } catch {
+          return trimmedUrl;
+        }
+      }
+
+      async function apiRequest(path, options = {}) {
+        const response = await fetch(`${apiBaseUrl}${path}`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(options.headers ?? {})
+          },
+          ...options
+        });
+
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          const message = Array.isArray(body.message)
+            ? body.message.join(", ")
+            : body.message || `HTTP ${response.status}`;
+          throw new Error(message);
+        }
+
+        return response.json();
+      }
+
+      async function loadSong() {
+        const songId = new URLSearchParams(window.location.search).get("id");
+
+        if (!songId) {
+          setConnectionStatus("Sin cancion", "warning");
+          showState("Abre esta pagina desde una tarjeta de cancion.", "warning");
+          return;
+        }
+
+        try {
+          const [song, categories] = await Promise.all([
+            apiRequest(`/songs/${encodeURIComponent(songId)}`),
+            apiRequest("/categories").catch(() => [])
+          ]);
+
+          state.song = song;
+          state.categories = Array.isArray(categories) ? categories : [];
+          setConnectionStatus("Conectado", "ok");
+          renderSong();
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "No se pudo cargar la cancion.";
+          setConnectionStatus("Error", "error");
+          showState(message, "error");
+        }
+      }
+
+      function setConnectionStatus(message, type) {
+        if (!elements.connectionStatus) return;
+        elements.connectionStatus.textContent = message;
+        elements.connectionStatus.dataset.type = type;
+      }
+
+      function showState(message, type = "neutral") {
+        if (elements.songState) {
+          elements.songState.textContent = message;
+          elements.songState.dataset.type = type;
+          elements.songState.classList.remove("is-hidden");
+        }
+
+        elements.songView?.classList.add("is-hidden");
+      }
+
+      function showSongView() {
+        elements.songState?.classList.add("is-hidden");
+        elements.songView?.classList.remove("is-hidden");
+      }
+
+      function getCategoryNames(categoryIds = []) {
+        const ids = new Set(categoryIds.map((id) => String(id)));
+        return state.categories
+          .filter((category) => ids.has(String(category._id)))
+          .map((category) => category.name);
+      }
+
+      function renderCategoryChips(categoryNames = []) {
+        const names = categoryNames.length > 0 ? categoryNames : ["Sin categoria"];
+
+        return names
+          .map((name) => `<span class="category-chip">${escapeHtml(name)}</span>`)
+          .join("");
+      }
+
+      function buildSongText(song) {
+        const categoryNames = getCategoryNames(song.categoryIds ?? []);
+        const lines = [String(song.title ?? "Cancion")];
+
+        if (song.author) {
+          lines.push(`Autor: ${song.author}`);
+        }
+
+        lines.push(
+          `Categorias: ${categoryNames.length > 0 ? categoryNames.join(", ") : "Sin categoria"}`
+        );
+        lines.push("");
+        lines.push(song.chordSheet || song.lyrics || "Sin letra registrada.");
+
+        if (song.notes) {
+          lines.push("");
+          lines.push(`Notas: ${song.notes}`);
+        }
+
+        return `${lines.join("\n").trimEnd()}\n`;
+      }
+
+      function getSafeFileName(value) {
+        return String(value ?? "cancion")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-zA-Z0-9-_ ]/g, "")
+          .trim()
+          .replace(/\s+/g, "-")
+          .toLocaleLowerCase() || "cancion";
+      }
+
+      function copyTextWithSelection(text) {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "true");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        textarea.style.top = "0";
+        textarea.style.opacity = "0";
+        document.body.append(textarea);
+        textarea.focus();
+        textarea.select();
+        textarea.setSelectionRange(0, textarea.value.length);
+        const copied = document.execCommand("copy");
+        textarea.remove();
+        return copied;
+      }
+
+      async function copyTextToClipboard(text) {
+        try {
+          if (document.queryCommandSupported?.("copy") !== false && copyTextWithSelection(text)) {
+            return;
+          }
+        } catch {
+          // Continue with Clipboard API when selection copy is unavailable.
+        }
+
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(text);
+            return;
+          }
+        } catch {
+          // Some local-network browsers reject Clipboard API on insecure origins.
+        }
+
+        throw new Error("Clipboard unavailable.");
+      }
+
+      function hideManualExportText() {
+        elements.manualExport?.classList.add("is-hidden");
+        if (elements.manualExportText) {
+          elements.manualExportText.value = "";
+        }
+      }
+
+      function showManualExportText(text) {
+        if (!elements.manualExport || !elements.manualExportText) return;
+
+        elements.manualExportText.value = text;
+        elements.manualExport.classList.remove("is-hidden");
+        elements.manualExport.scrollIntoView({ block: "start", behavior: "smooth" });
+        elements.manualExportText.focus();
+        elements.manualExportText.select();
+      }
+
+      async function copyCurrentSongText() {
+        if (!state.song) return;
+        const text = buildSongText(state.song);
+
+        try {
+          await copyTextToClipboard(text);
+          hideManualExportText();
+        } catch {
+          showManualExportText(text);
+        }
+      }
+
+      function downloadCurrentSongText() {
+        if (!state.song) return;
+        const blob = new Blob([buildSongText(state.song)], {
+          type: "text/plain;charset=utf-8"
+        });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `${getSafeFileName(state.song.title)}.txt`;
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+      }
+
+      function getSafeHttpUrl(value) {
+        const trimmedValue = String(value ?? "").trim();
+
+        if (trimmedValue.length === 0) {
+          return "";
+        }
+
+        try {
+          const url = new URL(trimmedValue);
+          return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+        } catch {
+          return "";
+        }
+      }
+
+      function getYoutubeEmbedUrl(value) {
+        const safeUrl = getSafeHttpUrl(value);
+
+        if (!safeUrl) {
+          return "";
+        }
+
+        try {
+          const url = new URL(safeUrl);
+          const host = url.hostname.replace(/^www\./, "").toLocaleLowerCase();
+          const parts = url.pathname.split("/").filter(Boolean);
+          let videoId = "";
+
+          if (host === "youtu.be") {
+            videoId = parts[0] ?? "";
+          }
+
+          const isYoutubeHost = host === "youtube.com" || host.endsWith(".youtube.com");
+          const isYoutubeNoCookieHost =
+            host === "youtube-nocookie.com" || host.endsWith(".youtube-nocookie.com");
+
+          if (isYoutubeHost || isYoutubeNoCookieHost) {
+            if (url.searchParams.has("v")) {
+              videoId = url.searchParams.get("v") ?? "";
+            } else if (["embed", "shorts", "live"].includes(parts[0] ?? "")) {
+              videoId = parts[1] ?? "";
+            }
+          }
+
+          if (!/^[A-Za-z0-9_-]{6,}$/.test(videoId)) {
+            return "";
+          }
+
+          return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}`;
+        } catch {
+          return "";
+        }
+      }
+
+      function looksLikeChordPro(value) {
+        return (
+          /\[[A-H][^\]\n]{0,24}\]/i.test(value) ||
+          /^\s*\{(?:title|subtitle|artist|key|capo|tempo|comment|c|soc|eoc|start_of|end_of)[^}]*:/im.test(value)
+        );
+      }
+
+      function parseChordSheet(value) {
+        const escapedValue = escapeHtml(value);
+        const parsers = looksLikeChordPro(value)
+          ? [new ChordProParser(), new ChordsOverWordsParser()]
+          : [new ChordsOverWordsParser(), new ChordProParser()];
+        let lastError = null;
+
+        for (const parser of parsers) {
+          try {
+            return parser.parse(escapedValue);
+          } catch (error) {
+            lastError = error;
+          }
+        }
+
+        throw lastError ?? new Error("No se pudo interpretar la cancion.");
+      }
+
+      function renderPlainText(value) {
+        if (!elements.chordOutput) return;
+        const pre = document.createElement("pre");
+        pre.className = "lyrics-block";
+        pre.textContent = value;
+        elements.chordOutput.replaceChildren(pre);
+      }
+
+      function renderChordSheet(value) {
+        if (!elements.chordOutput || !elements.chordSection) return;
+
+        const trimmedValue = String(value ?? "").trim();
+        elements.chordSection.classList.toggle("is-hidden", trimmedValue.length === 0);
+
+        if (trimmedValue.length === 0) {
+          elements.chordOutput.replaceChildren();
+          return;
+        }
+
+        try {
+          const parsedSong = parseChordSheet(trimmedValue);
+          elements.chordOutput.innerHTML = chordFormatter.format(parsedSong);
+        } catch {
+          renderPlainText(trimmedValue);
+        }
+      }
+
+      function renderOptionalVideo(song) {
+        const embedUrl = getYoutubeEmbedUrl(song.youtubeUrl);
+        const hasVideo = embedUrl.length > 0;
+
+        elements.videoSection?.classList.toggle("is-hidden", !hasVideo);
+
+        if (elements.videoFrame) {
+          elements.videoFrame.src = hasVideo ? embedUrl : "";
+          elements.videoFrame.title = `Video de ${song.title ?? "la cancion"}`;
+        }
+      }
+
+      function renderOptionalSheet(song) {
+        const sheetUrl = getSafeHttpUrl(song.sheetMusicUrl);
+        const hasSheet = sheetUrl.length > 0;
+
+        elements.sheetSection?.classList.toggle("is-hidden", !hasSheet);
+
+        if (elements.sheetFrame) {
+          elements.sheetFrame.src = hasSheet ? sheetUrl : "";
+          elements.sheetFrame.title = `Partitura de ${song.title ?? "la cancion"}`;
+        }
+
+        if (elements.sheetLink) {
+          elements.sheetLink.href = hasSheet ? sheetUrl : "/app";
+        }
+      }
+
+      function renderOptionalNotes(song) {
+        const notes = String(song.notes ?? "").trim();
+        const hasNotes = notes.length > 0;
+
+        elements.notesSection?.classList.toggle("is-hidden", !hasNotes);
+
+        if (elements.songNotes) {
+          elements.songNotes.textContent = notes;
+        }
+      }
+
+      function renderSong() {
+        const song = state.song;
+
+        if (!song) {
+          showState("Cancion no encontrada.", "error");
+          return;
+        }
+
+        const title = song.title || "Cancion";
+        const categoryNames = getCategoryNames(song.categoryIds ?? []);
+        const chordSource = String(song.chordSheet ?? "").trim() || String(song.lyrics ?? "").trim();
+
+        document.title = `${title} | Song Repertoire`;
+
+        if (elements.songTitle) {
+          elements.songTitle.textContent = title;
+        }
+
+        if (elements.songAuthor) {
+          elements.songAuthor.textContent = song.author ? `Autor: ${song.author}` : "Autor no registrado";
+        }
+
+        if (elements.songCategories) {
+          elements.songCategories.innerHTML = renderCategoryChips(categoryNames);
+        }
+
+        renderChordSheet(chordSource);
+        renderOptionalVideo(song);
+        renderOptionalSheet(song);
+        renderOptionalNotes(song);
+        hideManualExportText();
+        elements.copySongText?.removeAttribute("disabled");
+        elements.downloadSongText?.removeAttribute("disabled");
+        showSongView();
+      }
+    </script>
+  </body>
+</html>
+
+<style>
+  :root {
+    color: #17202e;
+    background: #edf2f6;
+    font-family:
+      Inter,
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      linear-gradient(180deg, #f8fbfc 0%, #edf2f6 34%, #e8eef3 100%);
+  }
+
+  a {
+    color: inherit;
+  }
+
+  button {
+    font: inherit;
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .layout {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    border-right: 1px solid #d6e0ea;
+    background: #f7fafc;
+    padding: 26px 18px;
+  }
+
+  .brand {
+    color: #152033;
+    font-size: 1.05rem;
+    font-weight: 900;
+    text-decoration: none;
+  }
+
+  nav {
+    display: grid;
+    gap: 8px;
+  }
+
+  nav a {
+    border-radius: 8px;
+    padding: 11px 12px;
+    color: #425268;
+    text-decoration: none;
+    font-size: 0.92rem;
+    font-weight: 850;
+  }
+
+  nav a:hover,
+  nav a[aria-current="page"] {
+    color: #8d392e;
+    background: #fff1ee;
+  }
+
+  .content {
+    display: grid;
+    align-content: start;
+    gap: 18px;
+    padding: 28px clamp(16px, 3vw, 40px);
+  }
+
+  .page-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: start;
+    border-bottom: 1px solid #dce4ee;
+    padding-bottom: 18px;
+  }
+
+  .eyebrow,
+  .panel-kicker {
+    margin: 0 0 7px;
+    color: #8d392e;
+    font-size: 0.73rem;
+    font-weight: 900;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+
+  h1,
+  h2 {
+    margin: 0;
+    color: #17202e;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 4vw, 4rem);
+    line-height: 1;
+  }
+
+  h2 {
+    font-size: 1.05rem;
+  }
+
+  .song-author {
+    margin: 10px 0 0;
+    color: #516174;
+    font-weight: 750;
+  }
+
+  .header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .status {
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #d9e0e8;
+    border-radius: 999px;
+    margin: 0;
+    padding: 7px 12px;
+    color: #516174;
+    background: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 900;
+  }
+
+  .status[data-type="ok"] {
+    border-color: #b6d8c1;
+    color: #277341;
+    background: #eef9f1;
+  }
+
+  .status[data-type="warning"] {
+    border-color: #e9d09a;
+    color: #876216;
+    background: #fff8e6;
+  }
+
+  .status[data-type="error"] {
+    border-color: #e1aca4;
+    color: #9d3e30;
+    background: #fff1ee;
+  }
+
+  .ghost-button,
+  .secondary-link {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #cfd7e1;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #2f3b4d;
+    padding: 9px 12px;
+    text-decoration: none;
+    font-size: 0.84rem;
+    font-weight: 900;
+  }
+
+  .ghost-button:hover,
+  .secondary-link:hover {
+    border-color: #b24d3d;
+    color: #8d392e;
+  }
+
+  .state-panel,
+  .manual-export,
+  .song-panel,
+  .song-summary {
+    border: 1px solid #dce4ee;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 10px 24px rgba(35, 49, 69, 0.06);
+  }
+
+  .state-panel {
+    padding: 18px;
+    color: #516174;
+    font-weight: 800;
+  }
+
+  .state-panel[data-type="error"] {
+    border-color: #e1aca4;
+    color: #9d3e30;
+    background: #fff8f6;
+  }
+
+  .state-panel[data-type="warning"] {
+    border-color: #e9d09a;
+    color: #876216;
+    background: #fff8e6;
+  }
+
+  .song-view {
+    display: grid;
+    gap: 16px;
+  }
+
+  .song-summary {
+    padding: 14px;
+  }
+
+  .song-category-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .category-chip {
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #cdd8e4;
+    border-radius: 999px;
+    padding: 4px 9px;
+    color: #314158;
+    background: #f4f8fb;
+    font-size: 0.76rem;
+    font-weight: 850;
+  }
+
+  .song-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  #chord-section {
+    grid-row: span 3;
+  }
+
+  .song-panel {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .manual-export {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .panel-heading {
+    border-bottom: 1px solid #e3e8ef;
+    padding-bottom: 12px;
+  }
+
+  .export-heading {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .chord-sheet-output {
+    overflow-x: auto;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+    background: #fbfcfe;
+    padding: 16px;
+    color: #253142;
+    line-height: 1.55;
+  }
+
+  :global(.chord-sheet-output .chord-sheet) {
+    min-width: max-content;
+  }
+
+  :global(.chord-sheet-output .chord-sheet .chord) {
+    color: #9d3e30;
+    font-weight: 900;
+  }
+
+  :global(.chord-sheet-output .chord-sheet .lyrics) {
+    color: #253142;
+  }
+
+  .lyrics-block,
+  :global(.chord-sheet-output .lyrics-block) {
+    overflow-wrap: anywhere;
+    margin: 0;
+    color: #253142;
+    font: inherit;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+
+  .media-frame,
+  .sheet-frame {
+    width: 100%;
+    border: 1px solid #dce4ee;
+    border-radius: 8px;
+    background: #f4f8fb;
+  }
+
+  .media-frame {
+    aspect-ratio: 16 / 9;
+  }
+
+  .sheet-frame {
+    min-height: 520px;
+  }
+
+  .notes-text {
+    margin: 0;
+    color: #516174;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+
+  textarea {
+    width: 100%;
+    resize: vertical;
+    border: 1px solid #cfd7e1;
+    border-radius: 8px;
+    background: #fbfcfe;
+    padding: 12px;
+    color: #253142;
+    font: inherit;
+    line-height: 1.55;
+  }
+
+  .is-hidden {
+    display: none !important;
+  }
+
+  @media (max-width: 900px) {
+    .layout {
+      grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+      border-right: 0;
+      border-bottom: 1px solid #d6e0ea;
+    }
+
+    nav {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    nav a {
+      text-align: center;
+    }
+
+    .song-grid {
+      grid-template-columns: 1fr;
+    }
+
+    #chord-section {
+      grid-row: auto;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .content {
+      padding-inline: 14px;
+    }
+
+    .page-header {
+      grid-template-columns: 1fr;
+    }
+
+    .header-actions {
+      justify-content: flex-start;
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+
+    .song-panel,
+    .manual-export,
+    .song-summary,
+    .state-panel {
+      padding: 14px;
+    }
+
+    .sheet-frame {
+      min-height: 420px;
+    }
+  }
+</style>

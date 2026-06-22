@@ -17,6 +17,9 @@ interface SongPersistencePayload {
   title?: string;
   author?: string;
   lyrics?: string;
+  chordSheet?: string;
+  youtubeUrl?: string;
+  sheetMusicUrl?: string;
   notes?: string;
   categoryIds?: Types.ObjectId[];
 }
@@ -104,6 +107,18 @@ export class SongsService {
 
     if (dto.lyrics !== undefined) {
       payload.lyrics = dto.lyrics;
+    }
+
+    if (dto.chordSheet !== undefined) {
+      payload.chordSheet = dto.chordSheet;
+    }
+
+    if (dto.youtubeUrl !== undefined) {
+      payload.youtubeUrl = dto.youtubeUrl;
+    }
+
+    if (dto.sheetMusicUrl !== undefined) {
+      payload.sheetMusicUrl = dto.sheetMusicUrl;
     }
 
     if (dto.notes !== undefined) {

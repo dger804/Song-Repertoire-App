@@ -213,30 +213,6 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
             <div id="song-list" class="song-list" aria-live="polite"></div>
           </section>
 
-          <section class="panel song-detail-panel" aria-labelledby="song-detail-title">
-            <div class="panel-heading dashboard-heading">
-              <div>
-                <p class="panel-kicker">Lectura</p>
-                <h2 id="song-detail-title">Detalle de cancion</h2>
-              </div>
-              <div class="viewer-actions">
-                <button id="copy-song-text" class="ghost-button is-hidden" type="button">
-                  Copiar texto
-                </button>
-                <button id="download-song-text" class="secondary-button is-hidden" type="button">
-                  Descargar TXT
-                </button>
-                <button id="close-song-detail" class="ghost-button is-hidden" type="button">
-                  Cerrar detalle
-                </button>
-              </div>
-            </div>
-
-            <div id="song-detail" class="song-detail" aria-live="polite">
-              <p class="empty">Selecciona Ver en una cancion para revisar su letra.</p>
-            </div>
-          </section>
-
           <section class="panel quick-song" aria-labelledby="quick-song-title">
             <h2 id="quick-song-title">Crear cancion</h2>
             <form id="song-form" class="form-grid">
@@ -269,6 +245,35 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                   name="lyrics"
                   required
                   rows="7"></textarea>
+              </label>
+              <label>
+                Letra con acordes
+                <textarea
+                  id="song-chord-sheet"
+                  maxlength="30000"
+                  name="chordSheet"
+                  placeholder="[C]Texto de la cancion..."
+                  rows="7"></textarea>
+              </label>
+              <label>
+                Video de YouTube
+                <input
+                  id="song-youtube-url"
+                  maxlength="500"
+                  name="youtubeUrl"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  type="url"
+                />
+              </label>
+              <label>
+                Partitura
+                <input
+                  id="song-sheet-music-url"
+                  maxlength="500"
+                  name="sheetMusicUrl"
+                  placeholder="https://.../partitura.pdf"
+                  type="url"
+                />
               </label>
               <label>
                 Notas
@@ -436,6 +441,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         songAvailableOnly: document.querySelector("#song-available-only"),
         songCategoryFilter: document.querySelector("#song-category-filter"),
         songCategoryOptions: document.querySelector("#song-category-options"),
+        songChordSheet: document.querySelector("#song-chord-sheet"),
         songDetail: document.querySelector("#song-detail"),
         songDetailPanel: document.querySelector(".song-detail-panel"),
         songFilterCount: document.querySelector("#song-filter-count"),
@@ -445,8 +451,10 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         songNotes: document.querySelector("#song-notes"),
         songPicker: document.querySelector(".song-picker"),
         songSearch: document.querySelector("#song-search"),
+        songSheetMusicUrl: document.querySelector("#song-sheet-music-url"),
         songSubmitButton: document.querySelector("#song-submit-button"),
-        songTitle: document.querySelector("#song-title")
+        songTitle: document.querySelector("#song-title"),
+        songYoutubeUrl: document.querySelector("#song-youtube-url")
       };
 
       function escapeHtml(value) {
@@ -764,6 +772,9 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         if (elements.songTitle) elements.songTitle.value = song.title ?? "";
         if (elements.songAuthor) elements.songAuthor.value = song.author ?? "";
         if (elements.songLyrics) elements.songLyrics.value = song.lyrics ?? "";
+        if (elements.songChordSheet) elements.songChordSheet.value = song.chordSheet ?? "";
+        if (elements.songYoutubeUrl) elements.songYoutubeUrl.value = song.youtubeUrl ?? "";
+        if (elements.songSheetMusicUrl) elements.songSheetMusicUrl.value = song.sheetMusicUrl ?? "";
         if (elements.songNotes) elements.songNotes.value = song.notes ?? "";
         setSongCategorySelection(song.categoryIds ?? []);
         updateFormModes();
@@ -1036,7 +1047,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           `Categorias: ${categoryNames.length > 0 ? categoryNames.join(", ") : "Sin categoria"}`
         );
         lines.push("");
-        lines.push(song.lyrics || "Sin letra registrada.");
+        lines.push(song.chordSheet || song.lyrics || "Sin letra registrada.");
 
         if (song.notes) {
           lines.push("");
@@ -1513,7 +1524,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           const categoryIds = getSongCategoryIds(song);
           const matchesQuery =
             query.length === 0 ||
-            `${song.title ?? ""} ${song.author ?? ""} ${song.lyrics ?? ""} ${song.notes ?? ""}`
+            `${song.title ?? ""} ${song.author ?? ""} ${song.lyrics ?? ""} ${song.chordSheet ?? ""} ${song.notes ?? ""}`
               .toLocaleLowerCase()
               .includes(query);
           const matchesCategory =
@@ -1617,7 +1628,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                   </div>
                 </div>
                 <div class="row-actions">
-                  <button class="ghost-button" type="button" data-view-song="${escapeHtml(song._id)}">Ver</button>
+                  <a class="ghost-button" href="/song/?id=${escapeHtml(song._id)}">Ver</a>
                   <button class="${isSelected ? "ghost-button" : "secondary-button"}" type="button" data-add-song="${escapeHtml(song._id)}" ${isSelected ? "disabled" : ""}>${isSelected ? "Agregada" : "Agregar"}</button>
                   <button class="ghost-button" type="button" data-edit-song="${escapeHtml(song._id)}">Editar</button>
                   ${renderDeleteControls("song", song._id)}
@@ -2252,9 +2263,12 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           const payload = {
             categoryIds,
             author: elements.songAuthor?.value ?? "",
+            chordSheet: elements.songChordSheet?.value ?? "",
             title: elements.songTitle?.value ?? "",
             lyrics: elements.songLyrics?.value ?? "",
-            notes: elements.songNotes?.value ?? ""
+            notes: elements.songNotes?.value ?? "",
+            sheetMusicUrl: elements.songSheetMusicUrl?.value ?? "",
+            youtubeUrl: elements.songYoutubeUrl?.value ?? ""
           };
           const song = await apiRequest(
             state.editingSongId ? `/songs/${state.editingSongId}` : "/songs",

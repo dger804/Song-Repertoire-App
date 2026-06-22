@@ -15,6 +15,15 @@ export class Song {
   @Prop({ default: "", required: true })
   lyrics!: string;
 
+  @Prop({ default: "" })
+  chordSheet!: string;
+
+  @Prop({ default: "", trim: true })
+  youtubeUrl!: string;
+
+  @Prop({ default: "", trim: true })
+  sheetMusicUrl!: string;
+
   @Prop({ default: "", trim: true })
   notes!: string;
 

@@ -24,6 +24,8 @@ El MVP inicial cubrira:
 - Relacion canciones-repertorios.
 - Orden de canciones dentro de repertorios.
 - Etiquetas internas dentro de repertorios.
+- Letra con acordes usando ChordSheetJS.
+- Video de YouTube y enlace de partitura opcionales en el detalle de cancion.
 - Roles base para usuarios futuros.
 
 Queda fuera del MVP inicial:
@@ -35,7 +37,8 @@ Queda fuera del MVP inicial:
 - dominio propio;
 - exportacion PDF;
 - modo presentacion;
-- acordes y transposicion.
+- transposicion;
+- renderer definitivo de partituras.
 
 ## Restricciones de esta fase
 
@@ -95,4 +98,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 31 - Salida manual para exportacion de texto.
+Etapa actual completada: Etapa 32 - Pagina de cancion con ChordSheetJS y multimedia opcional.

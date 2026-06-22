@@ -50,6 +50,9 @@ export interface Song {
   title: string;
   author?: string;
   lyrics: string;
+  chordSheet?: string;
+  youtubeUrl?: string;
+  sheetMusicUrl?: string;
   notes?: string;
   categoryIds: EntityId[];
 }
