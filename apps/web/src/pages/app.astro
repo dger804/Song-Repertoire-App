@@ -367,6 +367,10 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         monitorForElements
       } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
       import { reorder } from "@atlaskit/pragmatic-drag-and-drop/reorder";
+      import {
+        buildChordSheet,
+        ensureChordRendererStyles
+      } from "../lib/chord-renderer";
 
       const root = document.querySelector(".layout");
       const configuredApiBaseUrl = root?.dataset.apiBaseUrl ?? "";
@@ -456,6 +460,8 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         songTitle: document.querySelector("#song-title"),
         songYoutubeUrl: document.querySelector("#song-youtube-url")
       };
+
+      ensureChordRendererStyles();
 
       function escapeHtml(value) {
         return String(value)
@@ -581,6 +587,25 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
 
       function getSongById(songId) {
         return state.songs.find((song) => String(song._id) === String(songId)) ?? null;
+      }
+
+      function getSongContentText(song) {
+        if (!song) return "";
+
+        return String(song.chordSheet ?? "").trim() || String(song.lyrics ?? "").trim();
+      }
+
+      function renderSongContentPlaceholder(songId) {
+        return `<div class="lyrics-block chord-sheet-embed" data-render-song-id="${escapeHtml(songId)}"></div>`;
+      }
+
+      function hydrateSongContent(container = document) {
+        container.querySelectorAll("[data-render-song-id]").forEach((element) => {
+          const song = getSongById(element.dataset.renderSongId);
+          const source = getSongContentText(song) || "Sin letra registrada.";
+
+          element.replaceChildren(buildChordSheet(source));
+        });
       }
 
       function getViewingRepertoire() {
@@ -1017,7 +1042,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
           if (!song) {
             lines.push("Esta cancion ya no esta en la biblioteca.");
           } else {
-            lines.push(song.lyrics || "Sin letra registrada.");
+            lines.push(getSongContentText(song) || "Sin letra registrada.");
 
             if (song.notes) {
               lines.push("");
@@ -1572,7 +1597,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                 ${renderCategoryChips(categoryNames)}
               </div>
             </header>
-            <pre class="lyrics-block">${escapeHtml(song.lyrics || "Sin letra registrada.")}</pre>
+            ${renderSongContentPlaceholder(song._id)}
             ${
               song.notes
                 ? `<aside class="song-notes-block"><strong>Notas</strong><p>${escapeHtml(song.notes)}</p></aside>`
@@ -1580,6 +1605,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
             }
           </article>
         `;
+        hydrateSongContent(elements.songDetail);
       }
 
       function renderSongs() {
@@ -1849,7 +1875,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                               ${tagChips ? `<div class="song-card-tags">${tagChips}</div>` : ""}
                             </div>
                           </header>
-                          <pre class="lyrics-block">${escapeHtml(song.lyrics || "Sin letra registrada.")}</pre>
+                          ${renderSongContentPlaceholder(song._id)}
                           ${
                             song.notes
                               ? `<aside class="song-notes-block"><strong>Notas</strong><p>${escapeHtml(song.notes)}</p></aside>`
@@ -1862,6 +1888,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
             }
           </div>
         `;
+        hydrateSongContent(elements.repertoireViewer);
       }
 
       function renderRepertoires() {
@@ -3072,6 +3099,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
   }
 
   .lyrics-block {
+    overflow-x: auto;
     overflow-wrap: anywhere;
     margin: 0;
     border: 1px solid #e3e8ef;
@@ -3081,7 +3109,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     color: #253142;
     font: inherit;
     line-height: 1.55;
-    white-space: pre-wrap;
+    white-space: normal;
   }
 
   .song-notes-block {

@@ -98,4 +98,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 33 - Renderer propio de acordes sin dependencia GPL.
+Etapa actual completada: Etapa 34 - Renderer compartido de acordes en repertorios.

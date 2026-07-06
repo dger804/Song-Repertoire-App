@@ -39,7 +39,7 @@ La pantalla `/app` permite:
 
 - ver un dashboard con listado y conteos de repertorios/canciones;
 - ver repertorios y canciones en formato de tarjetas;
-- abrir una vista de repertorio con canciones ordenadas, letras, autor, notas y etiquetas internas;
+- abrir una vista de repertorio con canciones ordenadas, letras/acordes, autor, notas y etiquetas internas;
 - filtrar la vista de repertorio por etiqueta interna o canciones sin etiqueta;
 - copiar o descargar un repertorio abierto como texto plano;
 - mostrar una salida manual de texto cuando el navegador bloquea el portapapeles;
