@@ -255,6 +255,21 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
                   placeholder="[C]Texto de la cancion..."
                   rows="7"></textarea>
               </label>
+              <section
+                id="song-chord-preview-panel"
+                class="chord-preview-panel is-hidden"
+                aria-labelledby="song-chord-preview-title">
+                <div class="panel-heading preview-heading">
+                  <div>
+                    <p class="panel-kicker">Vista previa</p>
+                    <h3 id="song-chord-preview-title">Letra y acordes</h3>
+                  </div>
+                </div>
+                <div
+                  id="song-chord-preview"
+                  class="lyrics-block chord-preview-output"
+                  aria-live="polite"></div>
+              </section>
               <label>
                 Video de YouTube
                 <input
@@ -445,6 +460,8 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         songAvailableOnly: document.querySelector("#song-available-only"),
         songCategoryFilter: document.querySelector("#song-category-filter"),
         songCategoryOptions: document.querySelector("#song-category-options"),
+        songChordPreview: document.querySelector("#song-chord-preview"),
+        songChordPreviewPanel: document.querySelector("#song-chord-preview-panel"),
         songChordSheet: document.querySelector("#song-chord-sheet"),
         songDetail: document.querySelector("#song-detail"),
         songDetailPanel: document.querySelector(".song-detail-panel"),
@@ -608,6 +625,22 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         });
       }
 
+      function updateSongChordPreview() {
+        if (!elements.songChordPreview || !elements.songChordPreviewPanel) return;
+
+        const source =
+          String(elements.songChordSheet?.value ?? "").trim() ||
+          String(elements.songLyrics?.value ?? "").trim();
+        const hasSource = source.length > 0;
+
+        elements.songChordPreviewPanel.classList.toggle("is-hidden", !hasSource);
+        elements.songChordPreview.replaceChildren();
+
+        if (hasSource) {
+          elements.songChordPreview.replaceChildren(buildChordSheet(source));
+        }
+      }
+
       function getViewingRepertoire() {
         return (
           state.repertoires.find((item) => item._id === state.viewingRepertoireId) ?? null
@@ -762,6 +795,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         if (elements.addCreatedSong) elements.addCreatedSong.checked = true;
         setSongCategorySelection([]);
         updateFormModes();
+        updateSongChordPreview();
       }
 
       function resetRepertoireForm() {
@@ -803,6 +837,7 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         if (elements.songNotes) elements.songNotes.value = song.notes ?? "";
         setSongCategorySelection(song.categoryIds ?? []);
         updateFormModes();
+        updateSongChordPreview();
         elements.songTitle?.focus();
       }
 
@@ -2175,6 +2210,9 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
         resetRepertoireForm();
       });
 
+      elements.songChordSheet?.addEventListener("input", updateSongChordPreview);
+      elements.songLyrics?.addEventListener("input", updateSongChordPreview);
+
       async function deleteCategory(categoryId) {
         const category = state.categories.find((item) => item._id === categoryId);
         if (!category) return;
@@ -3110,6 +3148,23 @@ const configuredApiBaseUrl = import.meta.env.PUBLIC_API_BASE_URL ?? "";
     font: inherit;
     line-height: 1.55;
     white-space: normal;
+  }
+
+  .chord-preview-panel {
+    display: grid;
+    gap: 10px;
+    border: 1px solid #e3e8ef;
+    border-radius: 8px;
+    background: #fbfcfe;
+    padding: 12px;
+  }
+
+  .preview-heading {
+    align-items: center;
+  }
+
+  .chord-preview-output {
+    max-height: 260px;
   }
 
   .song-notes-block {

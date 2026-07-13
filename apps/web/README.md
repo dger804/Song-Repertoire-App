@@ -59,6 +59,7 @@ La pantalla `/app` permite:
 - filtrar canciones por categoria;
 - ocultar canciones ya agregadas al repertorio abierto;
 - crear canciones con autor, letra, letra con acordes, notas, video, partitura y categorias asociadas;
+- previsualizar la letra con acordes antes de guardar una cancion;
 - editar y eliminar canciones;
 - seleccionar canciones existentes;
 - ordenar canciones dentro de un repertorio con tarjetas accesibles;

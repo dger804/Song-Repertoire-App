@@ -98,4 +98,4 @@ song-repertoire-app/
 
 ## Estado
 
-Etapa actual completada: Etapa 34 - Renderer compartido de acordes en repertorios.
+Etapa actual completada: Etapa 35 - Previsualizacion de acordes en formulario de canciones.
